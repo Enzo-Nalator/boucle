@@ -7,6 +7,7 @@
   import Menu from './ui/Menu.svelte';
   import { START_EVENT, ui } from './ui/store.svelte';
   import Toolbar from './ui/Toolbar.svelte';
+  import Tooltip from './ui/Tooltip.svelte';
 
   let host: HTMLDivElement;
   let game: Phaser.Game;
@@ -21,6 +22,7 @@
 <div class="overlay" class:playing={ui.screen === 'play'}>
   <Hud />
   <Toolbar />
+  <Tooltip />
   <Menu onstart={start} />
   <GameOver onstart={start} />
 </div>

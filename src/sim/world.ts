@@ -14,7 +14,7 @@ export function routeLength(points: Pt[]): number {
   return n;
 }
 
-const UPGRADE_COST = 30, RENOVATE_COST = 50, MAX_LEVEL = 3;
+export const UPGRADE_COST = 30, RENOVATE_COST = 50, MAX_LEVEL = 3;
 
 function leak(w: World, n: number) {
   for (let i = 0; i < n; i++) w.log.push({ t: w.time, ev: 'leak' });
