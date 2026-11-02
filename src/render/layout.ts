@@ -31,3 +31,8 @@ export function distToPolyline(p: Pt, points: Pt[]): number {
   }
   return best;
 }
+
+/** Épaisseur de tracé d'une route selon sa priorité (0/1/2). */
+export const routeWidth = (priority: number) => 6 + 2 * priority;
+/** Nombre de pastilles affichées pour un niveau (rien au niveau 1). */
+export const levelPips = (level: number) => Math.max(0, Math.min(2, level - 1));

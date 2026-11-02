@@ -16,7 +16,7 @@ export const CONTAMINATION_STEP = 0.05, CONTAMINATION_MAX = 0.4, EMIT_FACTOR = 1
 export const FIRST_QUARTIER: Pt = { x: 160, y: 360 };
 /** Quartiers sur les bords gauche, haut et bas ; le milieu reste libre pour le réseau du joueur. */
 export const SLOTS: Pt[] = [
-  { x: 160, y: 160 }, { x: 160, y: 560 }, { x: 480, y: 80 }, { x: 480, y: 640 }, { x: 800, y: 80 }, { x: 800, y: 640 },
+  { x: 160, y: 160 }, { x: 160, y: 560 }, { x: 480, y: 80 }, { x: 480, y: 600 }, { x: 800, y: 80 }, { x: 800, y: 600 },
 ];
 const CYCLE = ['quartier', 'matiere', 'contamination', 'emission'] as const;
 
@@ -29,7 +29,7 @@ export function createEndless(seed: number): Endless {
     const w = world;
     switch (CYCLE[tick % CYCLE.length]) {
       case 'quartier':
-        if (slot < SLOTS.length) applyCommand(w, { type: 'place', kind: 'quartier', ...SLOTS[slot++] });
+        while (slot < SLOTS.length && !applyCommand(w, { type: 'place', kind: 'quartier', ...SLOTS[slot++] }));
         break;
       case 'matiere': {
         const r = NEW_RES.find(x => !w.activeRes.includes(x));

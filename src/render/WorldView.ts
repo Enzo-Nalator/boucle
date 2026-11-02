@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Actor, World } from '../sim/types';
 import { ACTOR_SHAPE, type ShapeName, GREY, INK, RES_COLOR } from './theme';
-import { pointAt } from './layout';
+import { levelPips, pointAt, routeWidth } from './layout';
 import { ACTOR_DEFS } from '../sim/defs';
 
 const SIZE = 22, RING = SIZE + 8;
@@ -30,7 +30,7 @@ export class WorldView {
     const g = this.g;
     g.clear();
     for (const r of w.routes) {
-      g.lineStyle(6, r.transit.length ? RES_COLOR[r.transit[0].packet.res] : GREY, 1);
+      g.lineStyle(routeWidth(r.priority), r.transit.length ? RES_COLOR[r.transit[0].packet.res] : GREY, 1);
       g.strokePoints(vec(r.points));
     }
     for (const r of w.routes) {
@@ -52,6 +52,7 @@ export class WorldView {
     const f = Math.min(1, (a.kind === 'quartier' ? a.queue.length : Math.max(a.queue.length, a.out.length)) / cap);
     let ringA = alpha;
     if (a.kind === 'quartier' && f >= 0.8) ringA *= 0.55 + 0.45 * Math.sin(this.scene.time.now / 120);
+    for (let i = 0; i < levelPips(a.level); i++) g.fillStyle(INK, alpha).fillCircle(a.x - 5 + 10 * i, a.y + RING + 8, 3);
     g.lineStyle(4, INK, 0.15 * alpha).strokeCircle(a.x, a.y, RING);
     if (f > 0) {
       g.lineStyle(4, INK, ringA).beginPath();

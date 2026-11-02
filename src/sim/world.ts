@@ -38,6 +38,8 @@ export function applyCommand(w: World, c: Command): boolean {
       if (c.from === c.to || c.points.length < 2) return false;
       if (!w.actors.some(a => a.id === c.from) || !w.actors.some(a => a.id === c.to)) return false;
       if (w.routes.some(r => r.from === c.from && r.to === c.to)) return false;
+      const inv = w.routes.find(r => r.from === c.to && r.to === c.from);
+      if (inv) return applyCommand(w, { type: 'removeRoute', id: inv.id }); // tracé inverse = suppression (R19)
       const length = routeLength(c.points), cost = length * ROUTE_COST_PER_PX;
       if (w.budget < cost) return false;
       w.budget -= cost;
@@ -53,7 +55,7 @@ export function applyCommand(w: World, c: Command): boolean {
     }
     case 'upgrade': {
       const a = w.actors.find(x => x.id === c.id);
-      if (!a || a.level >= MAX_LEVEL || w.budget < UPGRADE_COST) return false;
+      if (!a || a.kind === 'quartier' || a.kind === 'decharge' || a.level >= MAX_LEVEL || w.budget < UPGRADE_COST) return false;
       w.budget -= UPGRADE_COST;
       a.level += 1;
       return true;
@@ -68,8 +70,9 @@ export function applyCommand(w: World, c: Command): boolean {
       const a = w.actors.find(x => x.id === c.id);
       if (!a || w.budget < RENOVATE_COST) return false;
       w.budget -= RENOVATE_COST;
-      leak(w, a.queue.length);
+      leak(w, a.queue.length + a.out.length);
       a.queue = [];
+      a.out = [];
       return true;
     }
   }

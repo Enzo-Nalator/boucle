@@ -75,7 +75,10 @@ export function step(w: World, commands: Command[]): void {
     emit(w, a);
     const due = a.returns.filter(x => x.at <= w.time);
     a.returns = a.returns.filter(x => x.at > w.time);
-    for (const x of due) a.queue.push({ ...x.packet, kind: 'dechet' });
+    for (const x of due) {
+      a.queue.push({ ...x.packet, kind: 'dechet' });
+      w.log.push({ t: w.time, ev: 'emit' }); // un objet rendu est ré-émis : garde l'indice ≤ 100 %
+    }
   }
   for (const a of w.actors) if (on(a)) processActor(w, a);
   for (const a of w.actors) if (on(a)) dispatch(w, a);

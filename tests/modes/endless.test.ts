@@ -52,6 +52,13 @@ describe('directeur mode A', () => {
     expect(() => advanceTo(e, 1501)).not.toThrow(); // 7e événement quartier
     expect(quartiers(e)).toBe(1 + SLOTS.length);
   });
+  it('slot bloqué par un acteur : le quartier prend le slot libre suivant', () => {
+    const e = createEndless(1);
+    e.step([{ type: 'place', kind: 'collecteur', x: SLOTS[0].x, y: SLOTS[0].y }]);
+    advanceTo(e, 61);
+    expect(quartiers(e)).toBe(2);
+    expect(e.world.actors.find(a => a.kind === 'quartier' && a.id !== 1)).toMatchObject({ x: SLOTS[1].x, y: SLOTS[1].y });
+  });
   it('matières épuisées : un nouvel événement matière ne fait rien', () => {
     const e = createEndless(1);
     advanceTo(e, 601);

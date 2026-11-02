@@ -66,6 +66,47 @@ describe('commandes', () => {
     expect(w.routes.length).toBe(0);
     expect(applyCommand(w, { type: 'removeRoute', id: 99 })).toBe(false);
   });
+  it('route inverse b→a supprime a→b, sans coût ni création', () => {
+    const w = two();
+    applyCommand(w, { type: 'route', from: 1, to: 2, points: line });
+    w.routes[0].transit = [1, 2].map(i => ({ packet: pk(i), d: 0 }));
+    const b = w.budget, id = w.nextId;
+    expect(applyCommand(w, { type: 'route', from: 2, to: 1, points: [{ x: 100, y: 0 }, { x: 0, y: 0 }] })).toBe(true);
+    expect(w.routes).toEqual([]);
+    expect(w.budget).toBe(b);
+    expect(w.nextId).toBe(id);
+    expect(w.log.filter(l => l.ev === 'leak').length).toBe(2);
+  });
+  it('route même sens en double toujours refusée', () => {
+    const w = two();
+    applyCommand(w, { type: 'route', from: 1, to: 2, points: line });
+    const b = w.budget;
+    expect(applyCommand(w, { type: 'route', from: 1, to: 2, points: line })).toBe(false);
+    expect(w.routes.length).toBe(1);
+    expect(w.budget).toBe(b);
+  });
+  it('upgrade refusé pour quartier et décharge', () => {
+    const w = createWorld(1);
+    applyCommand(w, { type: 'place', kind: 'quartier', x: 0, y: 0 });
+    applyCommand(w, { type: 'place', kind: 'decharge', x: 200, y: 0 });
+    const b = w.budget;
+    expect(applyCommand(w, { type: 'upgrade', id: 1 })).toBe(false);
+    expect(applyCommand(w, { type: 'upgrade', id: 2 })).toBe(false);
+    expect(w.budget).toBe(b);
+    expect(w.actors.map(a => a.level)).toEqual([1, 1]);
+  });
+  it('renovate vide aussi la sortie d un tri bloqué', () => {
+    const w = two(); // tri (1) → recycleur plastique/verre? res absent: aucune route n'accepte
+    const t = w.actors[0];
+    t.queue = [pk(1), pk(2)];
+    t.out = [pk(3)];
+    const b = w.budget;
+    expect(applyCommand(w, { type: 'renovate', id: 1 })).toBe(true);
+    expect(t.queue).toEqual([]);
+    expect(t.out).toEqual([]);
+    expect(w.budget).toBe(b - 50);
+    expect(w.log.filter(l => l.ev === 'leak').length).toBe(3);
+  });
   it('upgrade plafonné au niveau 3', () => {
     const w = two();
     const r = [1, 2, 3, 4].map(() => applyCommand(w, { type: 'upgrade', id: 1 }));
