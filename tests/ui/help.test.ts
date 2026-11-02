@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ACTOR_DEFS } from '../../src/sim/defs';
+import { FABRICATE_REVENUE, RECYCLE_REVENUE } from '../../src/sim/defs';
 import { MAX_LEVEL, RENOVATE_COST, UPGRADE_COST } from '../../src/sim/world';
 import type { ActorKind } from '../../src/sim/types';
 import { ACTOR_INFO, ACTOR_ORDER, ALL_TOOLS, HELP_PAGES, actorNumber, actorStats, toolInfo } from '../../src/ui/help';
@@ -33,6 +34,13 @@ describe('fiches d’acteur', () => {
     expect(actorStats('quartier').cost).toBe('offert');
     expect(actorStats('decharge').capacity).toBe('file illimitée');
     expect(actorStats('decharge').upkeep).toBe('sans entretien');
+  });
+});
+
+describe('revenus affichés', () => {
+  it('le rôle du recycleur et du fabricant cite les revenus du simulateur', () => {
+    expect(ACTOR_INFO.recycleur.role).toContain(`${RECYCLE_REVENUE} € par paquet`);
+    expect(ACTOR_INFO.fabricant.role).toContain(`${String(FABRICATE_REVENUE).replace('.', ',')} € par objet`);
   });
 });
 

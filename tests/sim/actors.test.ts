@@ -1,3 +1,4 @@
+import { RECYCLE_REVENUE } from '../../src/sim/defs';
 import { describe, it, expect } from 'vitest';
 import { createWorld } from '../../src/sim/world';
 import { processActor } from '../../src/sim/actors';
@@ -9,14 +10,14 @@ const pk = (dirty = false, res: Res = 'plastique'): Packet =>
   ({ id: id++, res, kind: 'dechet', dirty, reusable: false, repaired: false });
 
 describe('actors', () => {
-  it('recycleur : 5 propres ⇒ +10 € et 5 matières', () => {
+  it('recycleur : 5 propres ⇒ 5 × RECYCLE_REVENUE et 5 matières', () => {
     const w = createWorld(1);
     const r = place(w, 'recycleur', 0, 0, 'plastique');
     const a = w.actors.find(x => x.id === r)!;
     const b0 = w.budget;
     a.queue.push(...[0, 1, 2, 3, 4].map(() => pk()));
     run(w, 10);
-    expect(w.budget - b0).toBeCloseTo(10 - 0.3 * 10, 1); // gain moins entretien
+    expect(w.budget - b0).toBeCloseTo(5 * RECYCLE_REVENUE - 0.3 * 10, 1); // gain moins entretien
     expect(a.out.filter(p => p.kind === 'matiere' && !p.dirty && p.res === 'plastique')).toHaveLength(5);
   });
 

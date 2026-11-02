@@ -13,6 +13,8 @@ export const ui = $state({
   index: 0,
   time: 0,
   over: null as null | 'debordement' | 'faillite',
+  /** Secondes avant le prochain quartier ; null s'il n'en viendra plus. */
+  nextQuartier: null as number | null,
   best: loadBest(browserStorage) as null | { time: number; index: number },
 });
 

@@ -59,7 +59,7 @@ export class GameScene extends Phaser.Scene {
   startGame(): void {
     this.endless = createEndless(Date.now() >>> 0);
     this.pending = []; this.acc = 0; this.sync = 0; this.drag = null;
-    ui.budget = this.endless.world.budget; ui.index = 0; ui.time = 0; ui.over = null;
+    ui.budget = this.endless.world.budget; ui.index = 0; ui.time = 0; ui.over = null; ui.nextQuartier = this.endless.nextQuartierIn();
     ui.screen = 'play';
   }
 
@@ -82,7 +82,7 @@ export class GameScene extends Phaser.Scene {
     if (ui.screen === 'play' && (this.sync >= 200 || w.over)) {
       this.sync = 0;
       const s = e.score();
-      ui.budget = w.budget; ui.index = s.index; ui.time = s.time; ui.over = w.over;
+      ui.budget = w.budget; ui.index = s.index; ui.time = s.time; ui.over = w.over; ui.nextQuartier = e.nextQuartierIn();
       if (w.over) { ui.best = saveBest(browserStorage, s); ui.screen = 'over'; }
     }
   }
