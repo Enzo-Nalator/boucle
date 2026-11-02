@@ -1,14 +1,15 @@
 <script lang="ts">
   import { ui } from './store.svelte';
   let { onstart }: { onstart: () => void } = $props();
+  const focus = (el: HTMLElement) => el.focus();
 </script>
 
 {#if ui.screen === 'menu'}
-  <div class="panel">
-    <h1>Boucle !</h1>
-    <button type="button" class="primary" onclick={onstart}>Réseau infini</button>
-    <button type="button" disabled>Campagne</button>
-    <small>bientôt</small>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+    <h1 id="menu-title">Boucle !</h1>
+    <button type="button" class="primary" use:focus onclick={onstart}>Réseau infini</button>
+    <button type="button" disabled aria-describedby="soon">Campagne</button>
+    <small id="soon">bientôt</small>
   </div>
 {/if}
 

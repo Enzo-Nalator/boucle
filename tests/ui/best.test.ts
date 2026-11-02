@@ -22,7 +22,7 @@ describe('best', () => {
     expect(loadBest(s)).toEqual({ time: 50, index: 0.2 });
   });
   it('ignores corrupted data', () => {
-    for (const bad of ['{nope', '"x"', '{"time":"a","index":1}', 'null']) {
+    for (const bad of ['{"time":-1,"index":0}', '{"time":5,"index":-0.1}', '{nope', '"x"', '{"time":"a","index":1}', 'null']) {
       expect(loadBest(fake(bad))).toBeNull();
       expect(saveBest(fake(bad), { time: 5, index: 0 })).toEqual({ time: 5, index: 0 });
     }
@@ -30,5 +30,11 @@ describe('best', () => {
   it('survives a throwing storage', () => {
     expect(loadBest(boom)).toBeNull();
     expect(saveBest(boom, { time: 5, index: 0 })).toEqual({ time: 5, index: 0 });
+  });
+  it('persists exactly {time, index}', () => {
+    const s = fake();
+    const r = saveBest(s, { time: 5, index: 0.5, extra: 1 } as never);
+    expect(r).toEqual({ time: 5, index: 0.5 });
+    expect(s.getItem(BEST_KEY)).toBe('{"time":5,"index":0.5}');
   });
 });

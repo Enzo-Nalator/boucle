@@ -7,7 +7,7 @@ export const isBetter = (a: Best, b: Best | null): boolean =>
 
 const valid = (v: unknown): v is Best =>
   !!v && typeof (v as Best).time === 'number' && typeof (v as Best).index === 'number'
-  && isFinite((v as Best).time) && isFinite((v as Best).index);
+  && (v as Best).time >= 0 && (v as Best).index >= 0 && isFinite((v as Best).time) && isFinite((v as Best).index);
 
 export function loadBest(storage: Store): Best | null {
   try {
@@ -20,8 +20,9 @@ export function loadBest(storage: Store): Best | null {
 export function saveBest(storage: Store, cand: Best): Best {
   const cur = loadBest(storage);
   if (!isBetter(cand, cur)) return cur!;
-  try { storage.setItem(BEST_KEY, JSON.stringify(cand)); } catch { /* stockage indisponible */ }
-  return cand;
+  const best = { time: cand.time, index: cand.index };
+  try { storage.setItem(BEST_KEY, JSON.stringify(best)); } catch { /* stockage indisponible */ }
+  return best;
 }
 
 /** Accès paresseux : même `localStorage` lève parfois à l'accès (stockage bloqué), les appels sont dans les try. */

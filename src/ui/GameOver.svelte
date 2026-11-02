@@ -2,16 +2,17 @@
   import { mmss, pct } from './format';
   import { ui } from './store.svelte';
   let { onstart }: { onstart: () => void } = $props();
+  const focus = (el: HTMLElement) => el.focus();
 </script>
 
 {#if ui.screen === 'over'}
-  <div class="panel">
-    <h2>{ui.over === 'debordement' ? 'Un quartier a débordé' : 'Budget épuisé'}</h2>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="over-title">
+    <h2 id="over-title">{ui.over === 'debordement' ? 'Un quartier a débordé' : 'Budget épuisé'}</h2>
     <p>Temps tenu : <b>{mmss(ui.time)}</b></p>
     <p>Indice de circularité : <b>{pct(ui.index)}</b></p>
     {#if ui.best}<p>Meilleur : <b>{mmss(ui.best.time)}</b> · {pct(ui.best.index)}</p>{/if}
     <div class="row">
-      <button type="button" class="primary" onclick={onstart}>Rejouer</button>
+      <button type="button" class="primary" use:focus onclick={onstart}>Rejouer</button>
       <button type="button" onclick={() => (ui.screen = 'menu')}>Menu</button>
     </div>
   </div>
