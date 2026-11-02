@@ -32,9 +32,11 @@ function dispatch(w: World, a: Actor) {
     const free = outs.filter(r => r.transit.length < routeCapacity(w, r));
     const dest = (r: Route) => w.actors.find(x => x.id === r.to)!;
     let ok = free.filter(r => (a.kind !== 'tri' ? accepts(dest(r), p) : p.dirty === (dest(r).kind === 'decharge') && accepts(dest(r), p)));
-    if (a.kind === 'tri' && !p.dirty && ok.length) {
-      const e = Math.max(0.01, 0.10 - 0.03 * (a.level - 1));
-      if (nextRandom(w) < e) ok = [free[Math.floor(nextRandom(w) * free.length)]]; // erreur de tri
+    // Ordre des tirages (tri, paquet propre) : seulement si une route juste est libre, 1 tirage pour l'erreur
+    // (erreur ssi < e) ; si erreur ET une mauvaise route libre existe, 1 tirage de plus pour son index.
+    if (a.kind === 'tri' && !p.dirty && ok.length && nextRandom(w) < Math.max(0.01, 0.10 - 0.03 * (a.level - 1))) {
+      const wrong = free.filter(r => !accepts(dest(r), p));
+      if (wrong.length) ok = [wrong[Math.floor(nextRandom(w) * wrong.length)]];
     }
     if (!ok.length) return;
     const top = Math.max(...ok.map(r => r.priority));

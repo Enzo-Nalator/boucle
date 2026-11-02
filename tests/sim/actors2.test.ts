@@ -11,14 +11,14 @@ const pk = (o: Partial<Packet> = {}, res: Res = 'plastique'): Packet =>
 const get = (w: World, i: number) => w.actors.find(a => a.id === i)!;
 const quiet = (seed = 1) => { const w = createWorld(seed); w.emitRate = 0; w.budget = 1e6; return w; };
 
-/** Tri niveau `level`, 1 route juste + 9 mauvaises (verre) : e × 9/10 des paquets propres plastique y atterrissent (fuite). */
+/** Tri niveau `level`, 1 route juste + 1 mauvaise (verre) : les erreurs atterrissent sur la mauvaise (fuite). */
 function errors(level: number, n = 1000) {
   const w = quiet(42);
   const t = place(w, 'tri', 0, 0);
   get(w, t).level = level;
   const good = place(w, 'recycleur', 100, 0, 'plastique');
-  const bad = Array.from({ length: 9 }, (_, i) => place(w, 'recycleur', 100 + 70 * (i + 1), 0, 'verre'));
-  link(w, t, good); bad.forEach(b => link(w, t, b));
+  const bad = place(w, 'recycleur', 170, 0, 'verre');
+  link(w, t, good); link(w, t, bad);
   for (const x of w.routes) x.length = 0;
   for (let i = 0; i < n; i++) {
     get(w, t).out.push(pk());
@@ -30,7 +30,23 @@ function errors(level: number, n = 1000) {
 
 describe('tri', () => {
   it('niveau 1 : 80 à 120 erreurs sur 1000', () => { const e = errors(1); expect(e).toBeGreaterThanOrEqual(80); expect(e).toBeLessThanOrEqual(120); });
-  it('niveau 3 : moins de 40 erreurs sur 1000', () => { expect(errors(3)).toBeLessThan(40); });
+  it('niveau 3 : moins d\'erreurs qu\'au niveau 1, et < 70', () => { const e3 = errors(3); expect(e3).toBeLessThan(errors(1)); expect(e3).toBeLessThan(70); });
+  it('paquet propre + seule route vers une décharge : reste bloqué', () => {
+    const w = quiet();
+    const t = place(w, 'tri', 0, 0), d = place(w, 'decharge', 100, 0);
+    link(w, t, d);
+    get(w, t).out.push(pk());
+    run(w, 10);
+    expect(get(w, t).out).toHaveLength(1);
+    expect(w.routes[0].transit).toHaveLength(0);
+  });
+  it('une seule route : le tri ne peut pas se tromper', () => {
+    const w = quiet(7);
+    const t = place(w, 'tri', 0, 0), r = place(w, 'recycleur', 100, 0, 'plastique');
+    link(w, t, r);
+    for (let i = 0; i < 200; i++) { get(w, t).out.push(pk()); step(w, []); get(w, r).queue = []; }
+    expect(w.log.filter(l => l.ev === 'leak')).toHaveLength(0);
+  });
   it('paquet sale + route vers recycleur seul : reste bloqué', () => {
     const w = quiet();
     const t = place(w, 'tri', 0, 0), r = place(w, 'recycleur', 100, 0, 'plastique');
@@ -83,7 +99,8 @@ describe('fabricant / réparateur / collecteur', () => {
       for (let i = 0; i < 20; i++) processActor(w, a); // 1 s
       return a.out.length;
     };
-    expect(count(3)).toBeGreaterThan(count(1));
+    expect(count(1)).toBe(2);
+    expect(count(3)).toBe(4);
   });
 });
 
@@ -103,10 +120,11 @@ describe('dispatch', () => {
   });
   it('round-robin à priorité égale', () => {
     const { w, ra, rb, src } = two();
-    src.out.push(pk(), pk());
+    const ps = [pk(), pk(), pk(), pk()];
+    src.out.push(...ps);
     step(w, []);
-    expect(w.routes.find(r => r.id === ra)!.transit).toHaveLength(1);
-    expect(w.routes.find(r => r.id === rb)!.transit).toHaveLength(1);
+    expect(w.routes.find(r => r.id === ra)!.transit.map(t => t.packet.id)).toEqual([ps[0].id, ps[2].id]);
+    expect(w.routes.find(r => r.id === rb)!.transit.map(t => t.packet.id)).toEqual([ps[1].id, ps[3].id]);
   });
   it('capacité : 4 par route (tri), collecteur 2 + (niveau − 1)', () => {
     for (const [kind, level, cap] of [['tri', 1, 4], ['collecteur', 1, 2], ['collecteur', 2, 3]] as const) {
