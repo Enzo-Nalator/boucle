@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ACTOR_DEFS } from '../../src/sim/defs';
 import { MAX_LEVEL, RENOVATE_COST, UPGRADE_COST } from '../../src/sim/world';
 import type { ActorKind } from '../../src/sim/types';
-import { ACTOR_INFO, ALL_TOOLS, HELP_PAGES, toolInfo } from '../../src/ui/help';
+import { ACTOR_INFO, ACTOR_ORDER, ALL_TOOLS, HELP_PAGES, actorNumber, actorStats, toolInfo } from '../../src/ui/help';
 
 const KINDS: ActorKind[] = ['quartier', 'collecteur', 'tri', 'recycleur', 'fabricant', 'reparateur', 'decharge'];
 
@@ -12,6 +12,27 @@ describe('ACTOR_INFO', () => {
       expect(ACTOR_INFO[k].name.length).toBeGreaterThan(2);
       expect(ACTOR_INFO[k].role.length).toBeGreaterThan(20);
     }
+  });
+});
+
+describe('fiches d’acteur', () => {
+  it('chaque acteur annonce son entrée et sa sortie', () => {
+    for (const k of KINDS) {
+      expect(ACTOR_INFO[k].inputs.length).toBeGreaterThan(2);
+      expect(ACTOR_INFO[k].outputs.length).toBeGreaterThan(2);
+    }
+  });
+
+  it('numérote les 7 acteurs de 01 à 07 dans l’ordre du jeu', () => {
+    expect(ACTOR_ORDER).toHaveLength(7);
+    expect(ACTOR_ORDER.map(actorNumber)).toEqual(['01', '02', '03', '04', '05', '06', '07']);
+  });
+
+  it('formate les chiffres du simulateur en français', () => {
+    expect(actorStats('recycleur')).toEqual({ capacity: 'file 8', rate: '0,8 / s', cost: '30 €', upkeep: '0,3 € / s' });
+    expect(actorStats('quartier').cost).toBe('offert');
+    expect(actorStats('decharge').capacity).toBe('file illimitée');
+    expect(actorStats('decharge').upkeep).toBe('sans entretien');
   });
 });
 
@@ -47,6 +68,21 @@ describe('HELP_PAGES', () => {
       expect(p.title.length).toBeGreaterThan(2);
       expect((p.paragraphs?.length ?? 0) + (p.actors?.length ?? 0) + (p.tools?.length ?? 0)).toBeGreaterThan(0);
     }
+  });
+
+  it('la page « Lire le plateau » a un paragraphe par repère numéroté (4)', () => {
+    const board = HELP_PAGES.find((p) => p.layout === 'board');
+    expect(board?.paragraphs).toHaveLength(4);
+  });
+
+  it('chaque page a une mise en page connue', () => {
+    expect(HELP_PAGES.map((p) => p.layout)).toEqual(['goal', 'board', 'actors', 'actors', 'tools', 'tips']);
+  });
+
+  it('donne à chaque page un mot géant de fond, tous différents', () => {
+    const words = HELP_PAGES.map((p) => p.backdrop);
+    for (const w of words) expect(w.length).toBeGreaterThan(3);
+    expect(new Set(words).size).toBe(words.length);
   });
 
   it('présente chacun des 7 acteurs sur exactement une page', () => {
