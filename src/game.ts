@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GameScene } from './GameScene';
+import { GameScene } from './render/GameScene';
 
 export function createGame(parent: HTMLElement): Phaser.Game {
   const game = new Phaser.Game({
@@ -7,7 +7,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     parent,
     width: 1280,
     height: 720,
-    backgroundColor: '#14202b',
+    backgroundColor: '#f4f1ea',
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [GameScene],
   });
