@@ -15,3 +15,6 @@ export const ui = $state({
   over: null as null | 'debordement' | 'faillite',
   best: loadBest(browserStorage) as null | { time: number; index: number },
 });
+
+/** Infobulle de la barre d'actions (suit le curseur ; voir Tooltip.svelte et tipAction.ts). */
+export const tip = $state({ visible: false, title: '', text: '', x: 0, y: 0 });

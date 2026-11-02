@@ -1,16 +1,26 @@
 <script lang="ts">
+  import Help from './Help.svelte';
   import { ui } from './store.svelte';
   let { onstart }: { onstart: () => void } = $props();
   const focus = (el: HTMLElement) => el.focus();
+
+  let helpOpen = $state(false);
+  let helpButton = $state<HTMLButtonElement>();
+  function closeHelp() {
+    helpOpen = false;
+    queueMicrotask(() => helpButton?.focus());
+  }
 </script>
 
 {#if ui.screen === 'menu'}
-  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="menu-title" inert={helpOpen}>
     <h1 id="menu-title">Boucle !</h1>
     <button type="button" class="primary" use:focus onclick={onstart}>Réseau infini</button>
+    <button type="button" bind:this={helpButton} onclick={() => (helpOpen = true)}>Aide</button>
     <button type="button" disabled aria-describedby="soon">Campagne</button>
     <small id="soon">bientôt</small>
   </div>
+  {#if helpOpen}<Help onclose={closeHelp} />{/if}
 {/if}
 
 <style>
