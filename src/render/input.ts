@@ -43,3 +43,14 @@ export function routeCommand(w: World, fromId: number, p: Pt): Command | null {
   if (!a || !b || a.id === b.id) return null;
   return { type: 'route', from: a.id, to: b.id, points: snap45(a, b) };
 }
+
+export type DragInfo = { pointerId: number; tool: Tool };
+/** Décide du sort d'un évènement de pointeur pendant un glisser : l'accepter, l'ignorer (autre pointeur) ou annuler le tracé. */
+export function dragVerdict(
+  drag: DragInfo | null, ev: { kind: 'move' | 'up' | 'out'; pointerId: number }, tool: Tool, over: boolean,
+): 'accept' | 'ignore' | 'cancel' {
+  if (!drag) return 'ignore';
+  if (over || tool !== drag.tool) return 'cancel';
+  if (ev.kind === 'out') return 'cancel';
+  return ev.pointerId === drag.pointerId ? 'accept' : 'ignore';
+}

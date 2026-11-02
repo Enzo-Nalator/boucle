@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Actor, World } from '../sim/types';
-import { ACTOR_SHAPE, GREY, INK, RES_COLOR } from './theme';
+import { ACTOR_SHAPE, type ShapeName, GREY, INK, RES_COLOR } from './theme';
 import { pointAt } from './layout';
 import { ACTOR_DEFS } from '../sim/defs';
 
@@ -12,7 +12,7 @@ function poly(g: G, x: number, y: number, r: number, n: number, rot: number) {
   g.fillPoints(vec(Array.from({ length: n }, (_, i) => ({ x: x + r * Math.cos(rot + (i * 2 * Math.PI) / n), y: y + r * Math.sin(rot + (i * 2 * Math.PI) / n) }))), true);
 }
 
-const SHAPES: Record<string, (g: G, x: number, y: number, s: number) => void> = {
+const SHAPES: Record<ShapeName, (g: G, x: number, y: number, s: number) => void> = {
   cercle: (g, x, y, s) => g.fillCircle(x, y, s),
   carre: (g, x, y, s) => g.fillRect(x - s, y - s, 2 * s, 2 * s),
   'carre-arrondi': (g, x, y, s) => g.fillRoundedRect(x - s, y - s, 2 * s, 2 * s, 7),
@@ -20,7 +20,6 @@ const SHAPES: Record<string, (g: G, x: number, y: number, s: number) => void> = 
   losange: (g, x, y, s) => poly(g, x, y, s * 1.25, 4, 0),
   croix: (g, x, y, s) => { g.fillRect(x - s, y - s / 3, 2 * s, (2 * s) / 3); g.fillRect(x - s / 3, y - s, (2 * s) / 3, 2 * s); },
   hexagone: (g, x, y, s) => poly(g, x, y, s * 1.1, 6, 0),
-  'rond-barre': (g, x, y, s) => { g.fillCircle(x, y, s); },
 };
 
 export class WorldView {

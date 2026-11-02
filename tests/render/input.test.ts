@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createWorld, applyCommand } from '../../src/sim/world';
-import { tapCommand, routeCommand } from '../../src/render/input';
+import { tapCommand, routeCommand, dragVerdict } from '../../src/render/input';
 
 function setup() {
   const w = createWorld(1);
@@ -47,4 +47,17 @@ describe('routeCommand', () => {
     expect(routeCommand(w, w.actors[1].id, { x: 300, y: 100 })).toBeNull();
     expect(routeCommand(w, w.actors[1].id, { x: 700, y: 600 })).toBeNull();
   });
+});
+
+describe('dragVerdict', () => {
+  const d = { pointerId: 1, tool: 'route' as const };
+  it('accepte le pointeur du tracé', () => {
+    expect(dragVerdict(d, { kind: 'move', pointerId: 1 }, 'route', false)).toBe('accept');
+    expect(dragVerdict(d, { kind: 'up', pointerId: 1 }, 'route', false)).toBe('accept');
+  });
+  it('ignore un autre pointeur', () => expect(dragVerdict(d, { kind: 'up', pointerId: 2 }, 'route', false)).toBe('ignore'));
+  it('ignore sans tracé', () => expect(dragVerdict(null, { kind: 'up', pointerId: 1 }, 'route', false)).toBe('ignore'));
+  it('annule si l\'outil change', () => expect(dragVerdict(d, { kind: 'up', pointerId: 1 }, 'delete', false)).toBe('cancel'));
+  it('annule si la partie est finie', () => expect(dragVerdict(d, { kind: 'move', pointerId: 1 }, 'route', true)).toBe('cancel'));
+  it('annule au relâchement hors canvas', () => expect(dragVerdict(d, { kind: 'out', pointerId: 1 }, 'route', false)).toBe('cancel'));
 });
