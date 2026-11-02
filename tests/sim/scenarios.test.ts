@@ -29,6 +29,8 @@ describe('scénarios de partie', () => {
   });
   it('même graine, même bot ⇒ même score', () => {
     const play = () => { const e = createEndless(5); playGoodGame(e, 200); return e.score(); };
-    expect(play()).toEqual(play());
+    const a = play();
+    expect(a.time).toBeGreaterThan(0);
+    expect(a).toEqual(play());
   });
 });

@@ -8,6 +8,7 @@ export type Endless = { world: World; step(cmds: Command[]): void; score(): { ti
 
 // Calendrier du directeur (données) : un tick toutes les TICK s, événements en cycle.
 export const TICK = 60;
+const EPS = 1e-6; // tolérance sur w.time (cumul de DT flottants)
 export const OUTAGE_FROM = 300;
 export const OUTAGE_DURATION = 10;
 export const NEW_RES: Res[] = ['metal', 'bio', 'papier'];
@@ -39,7 +40,8 @@ export function createEndless(seed: number): Endless {
       case 'emission': w.emitRate *= EMIT_FACTOR; break;
     }
     tick++;
-    if (w.time >= OUTAGE_FROM - 1e-6) {
+    // le nombre de tirages nextRandom dépend de l'existence d'un acteur non-quartier (déterministe)
+    if (w.time >= OUTAGE_FROM - EPS) {
       const others = w.actors.filter(a => a.kind !== 'quartier');
       if (others.length) others[Math.floor(nextRandom(w) * others.length)].offlineUntil = w.time + OUTAGE_DURATION;
     }
@@ -49,7 +51,7 @@ export function createEndless(seed: number): Endless {
     world,
     step(cmds) {
       step(world, cmds);
-      if (!world.over && world.time >= (tick + 1) * TICK - 1e-6) direct();
+      if (!world.over && world.time >= (tick + 1) * TICK - EPS) direct();
     },
     score: () => ({ time: world.time, index: circularityIndex(world) }),
   };
