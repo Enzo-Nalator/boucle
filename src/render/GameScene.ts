@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { createEndless, type Endless } from '../modes/endless';
 import { DT } from '../sim/defs';
 import type { Command, Pt } from '../sim/types';
-import { ui } from '../ui/store.svelte';
+import { browserStorage, saveBest } from '../ui/best';
+import { START_EVENT, ui } from '../ui/store.svelte';
 import { dragVerdict, hitActor, routeCommand, tapCommand, type DragInfo } from './input';
 import { snap45 } from './layout';
 import { INK } from './theme';
@@ -21,12 +22,14 @@ export class GameScene extends Phaser.Scene {
   constructor() { super('game'); }
 
   create(): void {
-    this.endless = createEndless(Date.now() >>> 0);
+    this.endless = createEndless(Date.now() >>> 0); // décor du menu, remplacé par startGame()
+    this.game.events.on(START_EVENT, this.startGame, this);
+    this.events.once('shutdown', () => this.game.events.off(START_EVENT, this.startGame, this));
     this.view = new WorldView(this);
     this.preview = this.add.graphics();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       const w = this.endless.world;
-      if (w.over || this.drag) return; // un second pointeur n'écrase pas un tracé en cours
+      if (ui.screen !== 'play' || w.over || this.drag) return; // un second pointeur n'écrase pas un tracé en cours
       if (ui.tool === 'route') {
         const a = hitActor(w, p);
         if (a) this.drag = { id: a.id, info: { pointerId: p.id, tool: ui.tool } };
@@ -52,6 +55,14 @@ export class GameScene extends Phaser.Scene {
     this.input.on('gameout', out);
   }
 
+  /** Nouvelle partie propre : monde neuf, commandes, accumulateur, tracé et chiffres remis à zéro. */
+  startGame(): void {
+    this.endless = createEndless(Date.now() >>> 0);
+    this.pending = []; this.acc = 0; this.sync = 0; this.drag = null;
+    ui.budget = this.endless.world.budget; ui.index = 0; ui.time = 0; ui.over = null;
+    ui.screen = 'play';
+  }
+
   private verdict(kind: 'move' | 'up' | 'out', pointerId: number) {
     return dragVerdict(this.drag?.info ?? null, { kind, pointerId }, ui.tool, !!this.endless.world.over);
   }
@@ -59,7 +70,7 @@ export class GameScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     const e = this.endless, w = e.world;
     this.acc += Math.min(delta / 1000, 0.25);
-    while (this.acc >= DT && !w.over) { e.step(this.pending); this.pending = []; this.acc -= DT; }
+    while (ui.screen === 'play' && this.acc >= DT && !w.over) { e.step(this.pending); this.pending = []; this.acc -= DT; }
     this.view.draw(w);
 
     if (this.drag && this.verdict('move', this.drag.info.pointerId) === 'cancel') this.drag = null; // outil changé ou partie finie
@@ -68,11 +79,11 @@ export class GameScene extends Phaser.Scene {
     if (a) this.preview.lineStyle(6, INK, 0.5).strokePoints(vec(snap45(a, this.pointer)));
 
     this.sync += delta;
-    if (ui.screen !== 'over' && (this.sync >= 200 || w.over)) {
+    if (ui.screen === 'play' && (this.sync >= 200 || w.over)) {
       this.sync = 0;
       const s = e.score();
       ui.budget = w.budget; ui.index = s.index; ui.time = s.time; ui.over = w.over;
-      if (w.over) ui.screen = 'over';
+      if (w.over) { ui.best = saveBest(browserStorage, s); ui.screen = 'over'; }
     }
   }
 }
