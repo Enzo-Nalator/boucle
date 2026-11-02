@@ -1,4 +1,4 @@
-import { ACTOR_DEFS, DT } from './defs';
+import { ACTOR_DEFS, DT, RECYCLE_REVENUE, FABRICATE_REVENUE } from './defs';
 import type { Actor, Packet, World } from './types';
 
 export function accepts(a: Actor, p: Packet): boolean {
@@ -32,12 +32,12 @@ export function processActor(w: World, a: Actor): void {
       if (a.window.filter(Boolean).length / a.window.length > DIRTY_MAX) {
         w.log.push({ t: w.time, ev: 'leak' });
       } else {
-        w.budget += 2;
+        w.budget += RECYCLE_REVENUE;
         w.log.push({ t: w.time, ev: 'recycle' });
         a.out.push({ id: w.nextId++, res: p.res, kind: 'matiere', dirty: false, reusable: false, repaired: false });
       }
     } else if (a.kind === 'fabricant') {
-      w.budget += 1;
+      w.budget += FABRICATE_REVENUE;
       a.out.push({ id: w.nextId++, res: p.res, kind: 'objet', dirty: false, reusable: false, repaired: false });
     } else if (a.kind === 'reparateur') {
       w.log.push({ t: w.time, ev: 'repair' });

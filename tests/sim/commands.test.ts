@@ -1,3 +1,4 @@
+import { START_BUDGET } from '../../src/sim/defs';
 import { describe, it, expect } from 'vitest';
 import { createWorld, applyCommand } from '../../src/sim/world';
 import { routeLength } from '../../src/sim/world';
@@ -16,7 +17,7 @@ describe('commandes', () => {
   it('place tri coûte 40 et initialise l acteur', () => {
     const w = createWorld(1);
     expect(applyCommand(w, { type: 'place', kind: 'tri', x: 0, y: 0 })).toBe(true);
-    expect(w.budget).toBe(160);
+    expect(w.budget).toBe(START_BUDGET - 40);
     expect(w.actors[0]).toMatchObject({ id: 1, level: 1, queue: [], out: [], credit: 0, rr: 0 });
     expect('res' in w.actors[0]).toBe(false);
   });
@@ -25,7 +26,7 @@ describe('commandes', () => {
     applyCommand(w, { type: 'place', kind: 'tri', x: 0, y: 0 });
     const id = w.nextId;
     expect(applyCommand(w, { type: 'place', kind: 'tri', x: 59, y: 0 })).toBe(false);
-    expect(w.budget).toBe(160);
+    expect(w.budget).toBe(START_BUDGET - 40);
     expect(w.nextId).toBe(id);
   });
   it('place sans budget refusé', () => {

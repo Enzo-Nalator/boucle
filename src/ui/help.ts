@@ -1,7 +1,9 @@
-import { ACTOR_DEFS } from '../sim/defs';
+import { ACTOR_DEFS, FABRICATE_REVENUE, RECYCLE_REVENUE } from '../sim/defs';
 import type { ActorKind } from '../sim/types';
 import { MAX_LEVEL, RENOVATE_COST, UPGRADE_COST } from '../sim/world';
 import type { Tool } from './store.svelte';
+
+const fr = (n: number): string => String(n).replace('.', ',');
 
 export const ACTOR_INFO: Record<ActorKind, { name: string; role: string; inputs: string; outputs: string }> = {
   quartier: {
@@ -24,13 +26,13 @@ export const ACTOR_INFO: Record<ActorKind, { name: string; role: string; inputs:
   },
   recycleur: {
     name: 'Recycleur',
-    role: 'Ne traite qu’une seule matière et refuse les lots trop contaminés (plus de 20 %). Paie 2 € par paquet recyclé et produit de la matière recyclée.',
+    role: `Ne traite qu’une seule matière et refuse les lots trop contaminés (plus de 20 %). Paie ${fr(RECYCLE_REVENUE)} € par paquet recyclé et produit de la matière recyclée.`,
     inputs: 'déchets d’une matière',
     outputs: 'matière recyclée',
   },
   fabricant: {
     name: 'Fabricant',
-    role: 'Transforme la matière recyclée en objets neufs (1 € par objet) renvoyés vers les quartiers : c’est lui qui referme la boucle.',
+    role: `Transforme la matière recyclée en objets neufs (${fr(FABRICATE_REVENUE)} € par objet) renvoyés vers les quartiers : c’est lui qui referme la boucle.`,
     inputs: 'matière recyclée',
     outputs: 'objets neufs',
   },
@@ -52,8 +54,6 @@ export const ACTOR_ORDER: ActorKind[] = ['quartier', 'collecteur', 'tri', 'recyc
 
 /** Numéro d'affichage d'un acteur dans le livre : 01 à 07. */
 export const actorNumber = (kind: ActorKind): string => String(ACTOR_ORDER.indexOf(kind) + 1).padStart(2, '0');
-
-const fr = (n: number): string => String(n).replace('.', ',');
 
 /** Chiffres du simulateur, formatés pour la fiche d'un acteur. */
 export function actorStats(kind: ActorKind): { capacity: string; rate: string; cost: string; upkeep: string } {

@@ -4,7 +4,13 @@ import { circularityIndex } from '../sim/metrics';
 import { applyCommand, createWorld } from '../sim/world';
 import type { Command, Pt, Res, World } from '../sim/types';
 
-export type Endless = { world: World; step(cmds: Command[]): void; score(): { time: number; index: number } };
+export type Endless = {
+  world: World;
+  step(cmds: Command[]): void;
+  score(): { time: number; index: number };
+  /** Secondes avant l'arrivée du prochain quartier ; null s'il n'en viendra plus (emplacements pris ou partie finie). */
+  nextQuartierIn(): number | null;
+};
 
 // Calendrier du directeur (données) : un tick toutes les TICK s, événements en cycle.
 export const TICK = 60;
@@ -54,5 +60,11 @@ export function createEndless(seed: number): Endless {
       if (!world.over && world.time >= (tick + 1) * TICK - EPS) direct();
     },
     score: () => ({ time: world.time, index: circularityIndex(world) }),
+    nextQuartierIn() {
+      if (world.over || slot >= SLOTS.length) return null;
+      let k = tick;
+      while (CYCLE[k % CYCLE.length] !== 'quartier') k++;
+      return Math.max(0, (k + 1) * TICK - world.time);
+    },
   };
 }

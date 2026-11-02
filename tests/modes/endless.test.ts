@@ -93,3 +93,30 @@ describe('directeur mode A', () => {
     expect(late).toBe(true);
   });
 });
+
+describe('minuteur du prochain quartier', () => {
+  it('compte à rebours depuis le début : 60 s, puis 30 s après 30 s', () => {
+    const e = createEndless(1);
+    expect(e.nextQuartierIn()).toBeCloseTo(60, 1);
+    advance(e, 30);
+    expect(e.nextQuartierIn()).toBeCloseTo(30, 1);
+  });
+  it('repart de 240 s après l’arrivée d’un quartier (un quartier toutes les 4 minutes)', () => {
+    const e = createEndless(1);
+    advanceTo(e, 61);
+    expect(quartiers(e)).toBe(2);
+    expect(e.nextQuartierIn()).toBeCloseTo(300 - 61, 1);
+    advanceTo(e, 301);
+    expect(quartiers(e)).toBe(3);
+    expect(e.nextQuartierIn()).toBeCloseTo(540 - 301, 1);
+  });
+  it('ne dit rien quand tous les emplacements sont pris, ni quand la partie est finie', () => {
+    const e = createEndless(1);
+    advanceTo(e, 1261);
+    expect(quartiers(e)).toBe(1 + SLOTS.length);
+    expect(e.nextQuartierIn()).toBeNull();
+    const f = createEndless(1);
+    f.world.over = 'faillite';
+    expect(f.nextQuartierIn()).toBeNull();
+  });
+});

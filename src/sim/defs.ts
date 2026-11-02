@@ -4,7 +4,10 @@ export const DT = 0.05;
 export const MIN_ACTOR_DISTANCE = 60;
 export const ROUTE_COST_PER_PX = 0.05;
 export const ROUTE_SPEED = 120;
-export const START_BUDGET = 200;
+export const START_BUDGET = 260;
+/** Gain par paquet accepté par un recycleur, et par objet sorti d'un fabricant. */
+export const RECYCLE_REVENUE = 3;
+export const FABRICATE_REVENUE = 1.5;
 
 export const ACTOR_DEFS: Record<ActorKind, { capacity: number; rate: number; cost: number; upkeep: number }> = {
   quartier: { capacity: 12, rate: 0.5, cost: 0, upkeep: 0 },

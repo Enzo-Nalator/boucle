@@ -1,3 +1,4 @@
+import { START_BUDGET } from '../../src/sim/defs';
 import { describe, it, expect } from 'vitest';
 import { createWorld } from '../../src/sim/world';
 import { nextRandom } from '../../src/sim/rng';
@@ -13,7 +14,7 @@ describe('world', () => {
   });
   it('monde initial', () => {
     const w = createWorld(1);
-    expect(w.budget).toBe(200);
+    expect(w.budget).toBe(START_BUDGET);
     expect(w.actors).toEqual([]);
     expect(w.activeRes).toEqual(['plastique', 'verre']);
     expect(w.over).toBeNull();

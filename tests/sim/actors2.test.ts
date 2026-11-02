@@ -1,3 +1,4 @@
+import { FABRICATE_REVENUE } from '../../src/sim/defs';
 import { describe, it, expect } from 'vitest';
 import { createWorld } from '../../src/sim/world';
 import { accepts, processActor } from '../../src/sim/actors';
@@ -67,13 +68,13 @@ describe('tri', () => {
 });
 
 describe('fabricant / réparateur / collecteur', () => {
-  it('fabricant : 5 matières ⇒ 5 objets, +5 €', () => {
+  it('fabricant : 5 matières ⇒ 5 objets, 5 × FABRICATE_REVENUE', () => {
     const w = quiet();
     const f = get(w, place(w, 'fabricant', 0, 0));
     const b0 = w.budget;
     f.queue.push(...[1, 2, 3, 4, 5].map(() => pk({ kind: 'matiere' }, 'verre')));
     run(w, 20);
-    expect(w.budget - b0).toBeCloseTo(5 - 0.3 * 20, 1); // gain moins entretien
+    expect(w.budget - b0).toBeCloseTo(5 * FABRICATE_REVENUE - 0.3 * 20, 1); // gain moins entretien
     expect(f.out.filter(p => p.kind === 'objet' && !p.repaired && p.res === 'verre')).toHaveLength(5);
   });
   it('réparateur : refuse le non réutilisable, répare le réutilisable', () => {
