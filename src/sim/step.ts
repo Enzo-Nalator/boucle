@@ -1,5 +1,6 @@
 import { ACTOR_DEFS, DT, ROUTE_SPEED } from './defs';
 import { accepts, processActor } from './actors';
+import { inWindow } from './metrics';
 import { nextRandom } from './rng';
 import { applyCommand } from './world';
 import type { Actor, Command, Route, World } from './types';
@@ -68,21 +69,24 @@ function advance(w: World, r: Route) {
 export function step(w: World, commands: Command[]): void {
   if (w.over) return;
   for (const c of commands) applyCommand(w, c);
+  const on = (a: Actor) => a.offlineUntil <= w.time;
   for (const a of w.actors) {
-    if (a.kind !== 'quartier') continue;
+    if (a.kind !== 'quartier' || !on(a)) continue;
     emit(w, a);
     const due = a.returns.filter(x => x.at <= w.time);
     a.returns = a.returns.filter(x => x.at > w.time);
     for (const x of due) a.queue.push({ ...x.packet, kind: 'dechet' });
   }
-  for (const a of w.actors) processActor(w, a);
-  for (const a of w.actors) dispatch(w, a);
+  for (const a of w.actors) if (on(a)) processActor(w, a);
+  for (const a of w.actors) if (on(a)) dispatch(w, a);
   for (const r of w.routes) advance(w, r);
   for (const a of w.actors) {
     if (a.kind !== 'quartier') continue;
     a.overflowT = a.queue.length >= ACTOR_DEFS.quartier.capacity ? a.overflowT + DT : 0;
     if (a.overflowT > OVERFLOW_LIMIT) w.over = 'debordement';
   }
-  // Task 6 : entretien, faillite, métriques
+  for (const a of w.actors) if (on(a)) w.budget -= ACTOR_DEFS[a.kind].upkeep * DT;
+  if (w.budget < 0 && !w.over) w.over = 'faillite';
+  w.log = w.log.filter(l => inWindow(w, l.t));
   w.time += DT;
 }

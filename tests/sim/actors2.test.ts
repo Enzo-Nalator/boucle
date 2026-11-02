@@ -73,7 +73,7 @@ describe('fabricant / réparateur / collecteur', () => {
     const b0 = w.budget;
     f.queue.push(...[1, 2, 3, 4, 5].map(() => pk({ kind: 'matiere' }, 'verre')));
     run(w, 20);
-    expect(w.budget - b0).toBe(5);
+    expect(w.budget - b0).toBeCloseTo(5 - 0.3 * 20, 1); // gain moins entretien
     expect(f.out.filter(p => p.kind === 'objet' && !p.repaired && p.res === 'verre')).toHaveLength(5);
   });
   it('réparateur : refuse le non réutilisable, répare le réutilisable', () => {

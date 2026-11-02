@@ -16,7 +16,7 @@ describe('actors', () => {
     const b0 = w.budget;
     a.queue.push(...[0, 1, 2, 3, 4].map(() => pk()));
     run(w, 10);
-    expect(w.budget - b0).toBe(10);
+    expect(w.budget - b0).toBeCloseTo(10 - 0.3 * 10, 1); // gain moins entretien
     expect(a.out.filter(p => p.kind === 'matiere' && !p.dirty && p.res === 'plastique')).toHaveLength(5);
   });
 
@@ -27,7 +27,7 @@ describe('actors', () => {
     const b0 = w.budget;
     a.queue.push(pk(true), pk(true), pk(true), pk(), pk());
     run(w, 10);
-    expect(w.budget).toBe(b0);
+    expect(w.budget - b0).toBeCloseTo(-0.3 * 10, 1); // seulement l’entretien
     expect(a.out).toHaveLength(0);
     expect(w.log.filter(l => l.ev === 'leak').length).toBeGreaterThanOrEqual(3);
   });
