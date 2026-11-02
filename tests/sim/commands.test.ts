@@ -31,8 +31,20 @@ describe('commandes', () => {
   it('place sans budget refusé', () => {
     const w = createWorld(1);
     w.budget = 10;
+    const id = w.nextId;
     expect(applyCommand(w, { type: 'place', kind: 'fabricant', x: 0, y: 0 })).toBe(false);
     expect(w.actors.length).toBe(0);
+    expect(w.budget).toBe(10);
+    expect(w.nextId).toBe(id);
+  });
+  it('route sans budget refusée', () => {
+    const w = two();
+    w.budget = 4;
+    const id = w.nextId;
+    expect(applyCommand(w, { type: 'route', from: 1, to: 2, points: line })).toBe(false);
+    expect(w.budget).toBe(4);
+    expect(w.routes.length).toBe(0);
+    expect(w.nextId).toBe(id);
   });
   it('route: coût, from===to, doublon', () => {
     const w = two();
