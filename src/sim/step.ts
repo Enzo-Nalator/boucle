@@ -1,5 +1,5 @@
 import { ACTOR_DEFS, DT, ROUTE_SPEED } from './defs';
-import { accepts, process } from './actors';
+import { accepts, processActor } from './actors';
 import { nextRandom } from './rng';
 import { applyCommand } from './world';
 import type { Actor, Command, Route, World } from './types';
@@ -46,6 +46,11 @@ function advance(w: World, r: Route) {
     t.d = Math.min(t.d + ROUTE_SPEED * DT, r.length);
     if (t.d < r.length) return true;
     if (!accepts(dest, t.packet)) { w.log.push({ t: w.time, ev: 'leak' }); return false; }
+    if (dest.kind === 'quartier') {
+      const p = t.packet;
+      dest.returns.push({ at: w.time + (p.repaired ? 120 : 60), packet: { ...p, id: w.nextId++, kind: 'dechet', dirty: false, reusable: true, repaired: false } });
+      return false;
+    }
     if (dest.queue.length >= cap) return true; // attend en bout de route
     dest.queue.push(t.packet);
     return false;
@@ -62,7 +67,7 @@ export function step(w: World, commands: Command[]): void {
     a.returns = a.returns.filter(x => x.at > w.time);
     for (const x of due) a.queue.push({ ...x.packet, kind: 'dechet' });
   }
-  for (const a of w.actors) process(w, a);
+  for (const a of w.actors) processActor(w, a);
   for (const a of w.actors) dispatch(w, a);
   for (const r of w.routes) advance(w, r);
   for (const a of w.actors) {

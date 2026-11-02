@@ -1,3 +1,4 @@
+import { ACTOR_DEFS, DT } from './defs';
 import type { Actor, Packet, World } from './types';
 
 export function accepts(a: Actor, p: Packet): boolean {
@@ -12,5 +13,31 @@ export function accepts(a: Actor, p: Packet): boolean {
   }
 }
 
-/** Point d'extension (Tasks 4-5) : traite a.queue à son débit et pousse le résultat dans a.out. */
-export function process(_w: World, _a: Actor): void {}
+const WINDOW = 5, DIRTY_MAX = 0.2;
+
+/** Traite a.queue au débit de l'acteur : un paquet par unité de crédit. */
+export function processActor(w: World, a: Actor): void {
+  if (a.kind === 'quartier') return;
+  const cap = ACTOR_DEFS[a.kind].capacity;
+  a.credit += ACTOR_DEFS[a.kind].rate * (1 + 0.5 * (a.level - 1)) * DT;
+  while (a.credit >= 1 - 1e-9 && a.queue.length && a.out.length < cap) {
+    a.credit -= 1;
+    const p = a.queue.shift()!;
+    if (a.kind === 'decharge') {
+      w.budget -= 0.5;
+      w.log.push({ t: w.time, ev: 'leak' });
+    } else if (a.kind === 'recycleur') {
+      a.window.push(p.dirty);
+      if (a.window.length > WINDOW) a.window.shift();
+      if (a.window.filter(Boolean).length / a.window.length > DIRTY_MAX) {
+        w.log.push({ t: w.time, ev: 'leak' });
+      } else {
+        w.budget += 2;
+        w.log.push({ t: w.time, ev: 'recycle' });
+        a.out.push({ id: w.nextId++, res: p.res, kind: 'matiere', dirty: false, reusable: false, repaired: false });
+      }
+    }
+    // Task 5 : tri, fabricant, réparateur, collecteur
+  }
+  if (a.credit > 1) a.credit = 1; // pas de crédit accumulé à vide
+}

@@ -36,7 +36,7 @@ describe('step', () => {
     link(w, q, d);
     run(w, 30);
     expect(w.over).toBeNull();
-    expect(w.actors[1].queue.length).toBeGreaterThanOrEqual(10);
+    expect(w.log.filter(l => l.ev === 'leak').length).toBeGreaterThanOrEqual(10);
   });
 
   it('paquet vers un acteur qui ne l accepte pas ⇒ leak', () => {
