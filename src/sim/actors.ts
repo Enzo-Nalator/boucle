@@ -36,8 +36,15 @@ export function processActor(w: World, a: Actor): void {
         w.log.push({ t: w.time, ev: 'recycle' });
         a.out.push({ id: w.nextId++, res: p.res, kind: 'matiere', dirty: false, reusable: false, repaired: false });
       }
+    } else if (a.kind === 'fabricant') {
+      w.budget += 1;
+      a.out.push({ id: w.nextId++, res: p.res, kind: 'objet', dirty: false, reusable: false, repaired: false });
+    } else if (a.kind === 'reparateur') {
+      w.log.push({ t: w.time, ev: 'repair' });
+      a.out.push({ id: w.nextId++, res: p.res, kind: 'objet', dirty: false, reusable: false, repaired: true });
+    } else {
+      a.out.push(p); // tri, collecteur : la décision de route est dans dispatch
     }
-    // Task 5 : tri, fabricant, réparateur, collecteur
   }
   if (a.credit > 1) a.credit = 1; // pas de crédit accumulé à vide
 }

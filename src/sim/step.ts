@@ -29,7 +29,13 @@ function dispatch(w: World, a: Actor) {
   const outs = w.routes.filter(r => r.from === a.id);
   while (src.length) {
     const p = src[0];
-    const ok = outs.filter(r => accepts(w.actors.find(x => x.id === r.to)!, p) && r.transit.length < routeCapacity(w, r));
+    const free = outs.filter(r => r.transit.length < routeCapacity(w, r));
+    const dest = (r: Route) => w.actors.find(x => x.id === r.to)!;
+    let ok = free.filter(r => (a.kind !== 'tri' ? accepts(dest(r), p) : p.dirty === (dest(r).kind === 'decharge') && accepts(dest(r), p)));
+    if (a.kind === 'tri' && !p.dirty && ok.length) {
+      const e = Math.max(0.01, 0.10 - 0.03 * (a.level - 1));
+      if (nextRandom(w) < e) ok = [free[Math.floor(nextRandom(w) * free.length)]]; // erreur de tri
+    }
     if (!ok.length) return;
     const top = Math.max(...ok.map(r => r.priority));
     const group = ok.filter(r => r.priority === top);
