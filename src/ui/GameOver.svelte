@@ -19,10 +19,46 @@
 {/if}
 
 <style>
-  .panel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(244, 241, 234, 0.92); color: #2b2f36; font-family: system-ui, sans-serif; font-size: 20px; pointer-events: auto; }
-  h2 { margin: 0 0 12px; font-size: 40px; }
-  p { margin: 0; }
-  .row { display: flex; gap: 12px; margin-top: 20px; }
-  button { min-width: 140px; min-height: 56px; border: 2px solid #2b2f36; border-radius: 12px; background: #f4f1ea; color: #2b2f36; font: 700 20px system-ui, sans-serif; cursor: pointer; }
-  .primary { background: #2b2f36; color: #f4f1ea; }
+  .panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(244, 241, 234, 0.92);
+    color: #2b2f36;
+    font-family: system-ui, sans-serif;
+    font-size: 20px;
+    pointer-events: auto;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-size: 40px;
+  }
+  p {
+    margin: 0;
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  button {
+    min-width: 140px;
+    min-height: 56px;
+    border: 2px solid #2b2f36;
+    border-radius: 12px;
+    background: #f4f1ea;
+    color: #2b2f36;
+    font:
+      700 20px system-ui,
+      sans-serif;
+    cursor: pointer;
+  }
+  .primary {
+    background: #2b2f36;
+    color: #f4f1ea;
+  }
 </style>

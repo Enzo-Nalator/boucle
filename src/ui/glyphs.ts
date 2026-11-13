@@ -2,9 +2,7 @@ import type { ShapeName } from '../render/theme';
 
 export type Pt = [number, number];
 export type Glyph =
-  | { kind: 'circle'; r: number }
-  | { kind: 'roundrect'; points: Pt[]; rx: number }
-  | { kind: 'polygon'; points: Pt[] };
+  { kind: 'circle'; r: number } | { kind: 'roundrect'; points: Pt[]; rx: number } | { kind: 'polygon'; points: Pt[] };
 
 const C = 50;
 const r1 = (n: number) => Math.round(n * 100) / 100;
@@ -20,11 +18,52 @@ const regular = (n: number, R: number): Pt[] =>
  */
 const GLYPHS: Record<ShapeName, Glyph> = {
   cercle: { kind: 'circle', r: 34 },
-  carre: { kind: 'polygon', points: [[22, 22], [78, 22], [78, 78], [22, 78]] },
-  'carre-arrondi': { kind: 'roundrect', points: [[22, 22], [78, 22], [78, 78], [22, 78]], rx: 12 },
+  carre: {
+    kind: 'polygon',
+    points: [
+      [22, 22],
+      [78, 22],
+      [78, 78],
+      [22, 78],
+    ],
+  },
+  'carre-arrondi': {
+    kind: 'roundrect',
+    points: [
+      [22, 22],
+      [78, 22],
+      [78, 78],
+      [22, 78],
+    ],
+    rx: 12,
+  },
   triangle: { kind: 'polygon', points: regular(3, 38) },
-  losange: { kind: 'polygon', points: [[50, 12], [88, 50], [50, 88], [12, 50]] },
-  croix: { kind: 'polygon', points: [[38, 14], [62, 14], [62, 38], [86, 38], [86, 62], [62, 62], [62, 86], [38, 86], [38, 62], [14, 62], [14, 38], [38, 38]] },
+  losange: {
+    kind: 'polygon',
+    points: [
+      [50, 12],
+      [88, 50],
+      [50, 88],
+      [12, 50],
+    ],
+  },
+  croix: {
+    kind: 'polygon',
+    points: [
+      [38, 14],
+      [62, 14],
+      [62, 38],
+      [86, 38],
+      [86, 62],
+      [62, 62],
+      [62, 86],
+      [38, 86],
+      [38, 62],
+      [14, 62],
+      [14, 38],
+      [38, 38],
+    ],
+  },
   hexagone: { kind: 'polygon', points: regular(6, 38) },
 };
 
@@ -44,5 +83,5 @@ export function glyphSvg(s: ShapeName): string {
     const [[x0, y0], [x1]] = g.points;
     return `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${x1 - x0}" rx="${g.rx}"/>`;
   }
-  return `<polygon points="${g.points.map((p) => p.join(',')).join(' ')}"/>`;
+  return `<polygon points="${g.points.map(p => p.join(',')).join(' ')}"/>`;
 }

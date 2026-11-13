@@ -18,18 +18,26 @@ const EPS = 1e-6; // tolérance sur w.time (cumul de DT flottants)
 export const OUTAGE_FROM = 300;
 export const OUTAGE_DURATION = 10;
 export const NEW_RES: Res[] = ['metal', 'bio', 'papier'];
-export const CONTAMINATION_STEP = 0.05, CONTAMINATION_MAX = 0.4, EMIT_FACTOR = 1.2;
+export const CONTAMINATION_STEP = 0.05,
+  CONTAMINATION_MAX = 0.4,
+  EMIT_FACTOR = 1.2;
 export const FIRST_QUARTIER: Pt = { x: 160, y: 360 };
 /** Quartiers sur les bords gauche, haut et bas ; le milieu reste libre pour le réseau du joueur. */
 export const SLOTS: Pt[] = [
-  { x: 160, y: 160 }, { x: 160, y: 560 }, { x: 480, y: 80 }, { x: 480, y: 600 }, { x: 800, y: 80 }, { x: 800, y: 600 },
+  { x: 160, y: 160 },
+  { x: 160, y: 560 },
+  { x: 480, y: 80 },
+  { x: 480, y: 600 },
+  { x: 800, y: 80 },
+  { x: 800, y: 600 },
 ];
 const CYCLE = ['quartier', 'matiere', 'contamination', 'emission'] as const;
 
 export function createEndless(seed: number): Endless {
   const world = createWorld(seed);
   applyCommand(world, { type: 'place', kind: 'quartier', ...FIRST_QUARTIER });
-  let tick = 0, slot = 0;
+  let tick = 0,
+    slot = 0;
 
   function direct() {
     const w = world;
@@ -42,8 +50,12 @@ export function createEndless(seed: number): Endless {
         if (r) w.activeRes.push(r);
         break;
       }
-      case 'contamination': w.contamination = Math.min(CONTAMINATION_MAX, w.contamination + CONTAMINATION_STEP); break;
-      case 'emission': w.emitRate *= EMIT_FACTOR; break;
+      case 'contamination':
+        w.contamination = Math.min(CONTAMINATION_MAX, w.contamination + CONTAMINATION_STEP);
+        break;
+      case 'emission':
+        w.emitRate *= EMIT_FACTOR;
+        break;
     }
     tick++;
     // le nombre de tirages nextRandom dépend de l'existence d'un acteur non-quartier (déterministe)

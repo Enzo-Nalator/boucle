@@ -15,7 +15,8 @@ describe('step', () => {
   it('déterministe à graine égale', () => {
     const mk = () => {
       const w = createWorld(42);
-      const q = place(w, 'quartier', 0, 0), d = place(w, 'decharge', 100, 0);
+      const q = place(w, 'quartier', 0, 0),
+        d = place(w, 'decharge', 100, 0);
       link(w, q, d);
       run(w, 60);
       return JSON.stringify(w);
@@ -32,7 +33,8 @@ describe('step', () => {
 
   it('quartier → décharge reliés', () => {
     const w = createWorld(1);
-    const q = place(w, 'quartier', 0, 0), d = place(w, 'decharge', 100, 0);
+    const q = place(w, 'quartier', 0, 0),
+      d = place(w, 'decharge', 100, 0);
     link(w, q, d);
     run(w, 30);
     expect(w.over).toBeNull();
@@ -41,11 +43,15 @@ describe('step', () => {
 
   it('paquet vers un acteur qui ne l accepte pas ⇒ leak', () => {
     const w = createWorld(1);
-    const q = place(w, 'quartier', 0, 0), f = place(w, 'fabricant', 100, 0);
+    const q = place(w, 'quartier', 0, 0),
+      f = place(w, 'fabricant', 100, 0);
     const r = link(w, q, f);
-    w.routes.find(x => x.id === r)!.transit.push({
-      packet: { id: 99, res: 'verre', kind: 'dechet', dirty: false, reusable: false, repaired: false }, d: 99,
-    });
+    w.routes
+      .find(x => x.id === r)!
+      .transit.push({
+        packet: { id: 99, res: 'verre', kind: 'dechet', dirty: false, reusable: false, repaired: false },
+        d: 99,
+      });
     expect(() => run(w, 1)).not.toThrow();
     expect(w.log.some(l => l.ev === 'leak')).toBe(true);
     expect(w.actors[1].queue.length).toBe(0);

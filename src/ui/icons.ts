@@ -26,5 +26,7 @@ const ACTION_SVG: Record<'route' | 'upgrade' | 'renovate' | 'priority' | 'delete
 export const actorIcon = (kind: ActorKind): string => SHAPE_SVG[ACTOR_SHAPE[kind]];
 
 export function toolIcon(tool: Tool): string {
-  return tool.startsWith('place:') ? actorIcon(tool.slice('place:'.length) as ActorKind) : ACTION_SVG[tool as keyof typeof ACTION_SVG];
+  return tool.startsWith('place:')
+    ? actorIcon(tool.slice('place:'.length) as ActorKind)
+    : ACTION_SVG[tool as keyof typeof ACTION_SVG];
 }

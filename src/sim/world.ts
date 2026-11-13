@@ -3,8 +3,17 @@ import type { Command, Pt, World } from './types';
 
 export function createWorld(seed: number): World {
   return {
-    time: 0, rng: seed >>> 0, nextId: 1, budget: START_BUDGET, actors: [], routes: [],
-    activeRes: ['plastique', 'verre'], contamination: 0.1, emitRate: 0.5, log: [], over: null,
+    time: 0,
+    rng: seed >>> 0,
+    nextId: 1,
+    budget: START_BUDGET,
+    actors: [],
+    routes: [],
+    activeRes: ['plastique', 'verre'],
+    contamination: 0.1,
+    emitRate: 0.5,
+    log: [],
+    over: null,
   };
 }
 
@@ -14,7 +23,9 @@ export function routeLength(points: Pt[]): number {
   return n;
 }
 
-export const UPGRADE_COST = 30, RENOVATE_COST = 50, MAX_LEVEL = 3;
+export const UPGRADE_COST = 30,
+  RENOVATE_COST = 50,
+  MAX_LEVEL = 3;
 
 function leak(w: World, n: number) {
   for (let i = 0; i < n; i++) w.log.push({ t: w.time, ev: 'leak' });
@@ -29,8 +40,20 @@ export function applyCommand(w: World, c: Command): boolean {
       if (w.actors.some(a => Math.hypot(a.x - c.x, a.y - c.y) < MIN_ACTOR_DISTANCE)) return false;
       w.budget -= cost;
       w.actors.push({
-        id: w.nextId++, kind: c.kind, x: c.x, y: c.y, ...(c.res ? { res: c.res } : {}), level: 1,
-        queue: [], out: [], credit: 0, offlineUntil: 0, overflowT: 0, window: [], returns: [], rr: 0,
+        id: w.nextId++,
+        kind: c.kind,
+        x: c.x,
+        y: c.y,
+        ...(c.res ? { res: c.res } : {}),
+        level: 1,
+        queue: [],
+        out: [],
+        credit: 0,
+        offlineUntil: 0,
+        overflowT: 0,
+        window: [],
+        returns: [],
+        rr: 0,
       });
       return true;
     }
@@ -40,7 +63,8 @@ export function applyCommand(w: World, c: Command): boolean {
       if (w.routes.some(r => r.from === c.from && r.to === c.to)) return false;
       const inv = w.routes.find(r => r.from === c.to && r.to === c.from);
       if (inv) return applyCommand(w, { type: 'removeRoute', id: inv.id }); // tracé inverse = suppression (R19)
-      const length = routeLength(c.points), cost = length * ROUTE_COST_PER_PX;
+      const length = routeLength(c.points),
+        cost = length * ROUTE_COST_PER_PX;
       if (w.budget < cost) return false;
       w.budget -= cost;
       w.routes.push({ id: w.nextId++, from: c.from, to: c.to, points: c.points, length, transit: [], priority: 0 });
@@ -55,7 +79,8 @@ export function applyCommand(w: World, c: Command): boolean {
     }
     case 'upgrade': {
       const a = w.actors.find(x => x.id === c.id);
-      if (!a || a.kind === 'quartier' || a.kind === 'decharge' || a.level >= MAX_LEVEL || w.budget < UPGRADE_COST) return false;
+      if (!a || a.kind === 'quartier' || a.kind === 'decharge' || a.level >= MAX_LEVEL || w.budget < UPGRADE_COST)
+        return false;
       w.budget -= UPGRADE_COST;
       a.level += 1;
       return true;

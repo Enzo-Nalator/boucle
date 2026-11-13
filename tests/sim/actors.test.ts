@@ -6,8 +6,14 @@ import { run, place, link } from '../helpers';
 import type { Packet, Res } from '../../src/sim/types';
 
 let id = 1000;
-const pk = (dirty = false, res: Res = 'plastique'): Packet =>
-  ({ id: id++, res, kind: 'dechet', dirty, reusable: false, repaired: false });
+const pk = (dirty = false, res: Res = 'plastique'): Packet => ({
+  id: id++,
+  res,
+  kind: 'dechet',
+  dirty,
+  reusable: false,
+  repaired: false,
+});
 
 describe('actors', () => {
   it('recycleur : 5 propres ⇒ 5 × RECYCLE_REVENUE et 5 matières', () => {
@@ -47,11 +53,16 @@ describe('actors', () => {
   function objetToQuartier(repaired: boolean) {
     const w = createWorld(1);
     w.emitRate = 0;
-    const f = place(w, 'fabricant', 0, 0), q = place(w, 'quartier', 100, 0);
+    const f = place(w, 'fabricant', 0, 0),
+      q = place(w, 'quartier', 100, 0);
     const rid = link(w, f, q);
     const qa = w.actors.find(x => x.id === q)!;
-    w.routes.find(r => r.id === rid)!.transit.push({
-      packet: { id: id++, res: 'verre', kind: 'objet', dirty: false, reusable: false, repaired }, d: 0 });
+    w.routes
+      .find(r => r.id === rid)!
+      .transit.push({
+        packet: { id: id++, res: 'verre', kind: 'objet', dirty: false, reusable: false, repaired },
+        d: 0,
+      });
     return { w, qa };
   }
 

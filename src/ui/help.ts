@@ -50,7 +50,15 @@ export const ACTOR_INFO: Record<ActorKind, { name: string; role: string; inputs:
   },
 };
 
-export const ACTOR_ORDER: ActorKind[] = ['quartier', 'collecteur', 'tri', 'recycleur', 'fabricant', 'reparateur', 'decharge'];
+export const ACTOR_ORDER: ActorKind[] = [
+  'quartier',
+  'collecteur',
+  'tri',
+  'recycleur',
+  'fabricant',
+  'reparateur',
+  'decharge',
+];
 
 /** Numéro d'affichage d'un acteur dans le livre : 01 à 07. */
 export const actorNumber = (kind: ActorKind): string => String(ACTOR_ORDER.indexOf(kind) + 1).padStart(2, '0');
@@ -68,8 +76,16 @@ export function actorStats(kind: ActorKind): { capacity: string; rate: string; c
 
 export const ALL_TOOLS: Tool[] = [
   'route',
-  'place:collecteur', 'place:tri', 'place:recycleur', 'place:fabricant', 'place:reparateur', 'place:decharge',
-  'upgrade', 'renovate', 'priority', 'delete',
+  'place:collecteur',
+  'place:tri',
+  'place:recycleur',
+  'place:fabricant',
+  'place:reparateur',
+  'place:decharge',
+  'upgrade',
+  'renovate',
+  'priority',
+  'delete',
 ];
 
 /** Titre et texte de l’infobulle d’un outil de la barre d’actions. */
@@ -81,15 +97,30 @@ export function toolInfo(tool: Tool): { title: string; text: string } {
   }
   switch (tool) {
     case 'route':
-      return { title: 'Tracer une route', text: 'Glisse d’un acteur à un autre. Les routes suivent des segments à 0°, 45° ou 90° ; le coût dépend de leur longueur. Glisser dans le sens inverse d’une route existante la supprime.' };
+      return {
+        title: 'Tracer une route',
+        text: 'Glisse d’un acteur à un autre. Les routes suivent des segments à 0°, 45° ou 90° ; le coût dépend de leur longueur. Glisser dans le sens inverse d’une route existante la supprime.',
+      };
     case 'upgrade':
-      return { title: 'Améliorer', text: `Touche un acteur pour monter son niveau (jusqu’au niveau ${MAX_LEVEL}) : il traite plus vite. Coût : ${UPGRADE_COST} €. Sans effet sur les quartiers et les décharges.` };
+      return {
+        title: 'Améliorer',
+        text: `Touche un acteur pour monter son niveau (jusqu’au niveau ${MAX_LEVEL}) : il traite plus vite. Coût : ${UPGRADE_COST} €. Sans effet sur les quartiers et les décharges.`,
+      };
     case 'renovate':
-      return { title: 'Rénover', text: `Touche un acteur pour vider ses files d’attente en urgence (les paquets sont perdus). Coût : ${RENOVATE_COST} €.` };
+      return {
+        title: 'Rénover',
+        text: `Touche un acteur pour vider ses files d’attente en urgence (les paquets sont perdus). Coût : ${RENOVATE_COST} €.`,
+      };
     case 'priority':
-      return { title: 'Priorité', text: 'Touche une route pour changer sa priorité (0, 1 ou 2). Les routes prioritaires sont servies en premier et tracées plus épaisses.' };
+      return {
+        title: 'Priorité',
+        text: 'Touche une route pour changer sa priorité (0, 1 ou 2). Les routes prioritaires sont servies en premier et tracées plus épaisses.',
+      };
     default:
-      return { title: 'Supprimer une route', text: 'Touche une route pour la supprimer. Les paquets en transit sont perdus.' };
+      return {
+        title: 'Supprimer une route',
+        text: 'Touche une route pour la supprimer. Les paquets en transit sont perdus.',
+      };
   }
 }
 
@@ -145,7 +176,9 @@ export const HELP_PAGES: HelpPage[] = [
     layout: 'tools',
     title: 'Les outils',
     backdrop: 'OUTILS',
-    paragraphs: ['Choisis un outil dans la barre du bas, puis touche ou glisse sur le plateau. Survole un bouton pour lire son effet.'],
+    paragraphs: [
+      'Choisis un outil dans la barre du bas, puis touche ou glisse sur le plateau. Survole un bouton pour lire son effet.',
+    ],
     tools: ALL_TOOLS,
   },
   {

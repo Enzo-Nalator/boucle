@@ -6,14 +6,21 @@ export const isBetter = (a: Best, b: Best | null): boolean =>
   !b || a.time > b.time || (a.time === b.time && a.index > b.index);
 
 const valid = (v: unknown): v is Best =>
-  !!v && typeof (v as Best).time === 'number' && typeof (v as Best).index === 'number'
-  && (v as Best).time >= 0 && (v as Best).index >= 0 && isFinite((v as Best).time) && isFinite((v as Best).index);
+  !!v &&
+  typeof (v as Best).time === 'number' &&
+  typeof (v as Best).index === 'number' &&
+  (v as Best).time >= 0 &&
+  (v as Best).index >= 0 &&
+  isFinite((v as Best).time) &&
+  isFinite((v as Best).index);
 
 export function loadBest(storage: Store): Best | null {
   try {
     const v: unknown = JSON.parse(storage.getItem(BEST_KEY) ?? 'null');
     return valid(v) ? v : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 /** Enregistre `cand` s'il bat le meilleur stocké ; renvoie le meilleur à afficher. */
@@ -21,7 +28,11 @@ export function saveBest(storage: Store, cand: Best): Best {
   const cur = loadBest(storage);
   if (!isBetter(cand, cur)) return cur!;
   const best = { time: cand.time, index: cand.index };
-  try { storage.setItem(BEST_KEY, JSON.stringify(best)); } catch { /* stockage indisponible */ }
+  try {
+    storage.setItem(BEST_KEY, JSON.stringify(best));
+  } catch {
+    /* stockage indisponible */
+  }
   return best;
 }
 

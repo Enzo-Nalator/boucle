@@ -3,17 +3,24 @@ import type { Actor, Packet, World } from './types';
 
 export function accepts(a: Actor, p: Packet): boolean {
   switch (a.kind) {
-    case 'recycleur': return p.kind === 'dechet' && p.res === a.res;
-    case 'fabricant': return p.kind === 'matiere';
-    case 'quartier': return p.kind === 'objet';
-    case 'tri': return p.kind === 'dechet';
-    case 'reparateur': return p.kind === 'dechet' && p.reusable;
+    case 'recycleur':
+      return p.kind === 'dechet' && p.res === a.res;
+    case 'fabricant':
+      return p.kind === 'matiere';
+    case 'quartier':
+      return p.kind === 'objet';
+    case 'tri':
+      return p.kind === 'dechet';
+    case 'reparateur':
+      return p.kind === 'dechet' && p.reusable;
     case 'decharge':
-    case 'collecteur': return true;
+    case 'collecteur':
+      return true;
   }
 }
 
-const WINDOW = 5, DIRTY_MAX = 0.2;
+const WINDOW = 5,
+  DIRTY_MAX = 0.2;
 
 /** Traite a.queue au débit de l'acteur : un paquet par unité de crédit. */
 export function processActor(w: World, a: Actor): void {

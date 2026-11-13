@@ -19,7 +19,9 @@ export class GameScene extends Phaser.Scene {
   private acc = 0;
   private sync = 0;
 
-  constructor() { super('game'); }
+  constructor() {
+    super('game');
+  }
 
   create(): void {
     this.endless = createEndless(Date.now() >>> 0); // décor du menu, remplacé par startGame()
@@ -50,7 +52,9 @@ export class GameScene extends Phaser.Scene {
       }
       if (v !== 'ignore') this.drag = null;
     });
-    const out = () => { if (this.verdict('out', this.drag?.info.pointerId ?? -1) === 'cancel') this.drag = null; };
+    const out = () => {
+      if (this.verdict('out', this.drag?.info.pointerId ?? -1) === 'cancel') this.drag = null;
+    };
     this.input.on('pointerupoutside', out);
     this.input.on('gameout', out);
   }
@@ -58,8 +62,15 @@ export class GameScene extends Phaser.Scene {
   /** Nouvelle partie propre : monde neuf, commandes, accumulateur, tracé et chiffres remis à zéro. */
   startGame(): void {
     this.endless = createEndless(Date.now() >>> 0);
-    this.pending = []; this.acc = 0; this.sync = 0; this.drag = null;
-    ui.budget = this.endless.world.budget; ui.index = 0; ui.time = 0; ui.over = null; ui.nextQuartier = this.endless.nextQuartierIn();
+    this.pending = [];
+    this.acc = 0;
+    this.sync = 0;
+    this.drag = null;
+    ui.budget = this.endless.world.budget;
+    ui.index = 0;
+    ui.time = 0;
+    ui.over = null;
+    ui.nextQuartier = this.endless.nextQuartierIn();
     ui.screen = 'play';
   }
 
@@ -68,9 +79,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    const e = this.endless, w = e.world;
+    const e = this.endless,
+      w = e.world;
     this.acc += Math.min(delta / 1000, 0.25);
-    while (ui.screen === 'play' && this.acc >= DT && !w.over) { e.step(this.pending); this.pending = []; this.acc -= DT; }
+    while (ui.screen === 'play' && this.acc >= DT && !w.over) {
+      e.step(this.pending);
+      this.pending = [];
+      this.acc -= DT;
+    }
     this.view.draw(w);
 
     if (this.drag && this.verdict('move', this.drag.info.pointerId) === 'cancel') this.drag = null; // outil changé ou partie finie
@@ -82,8 +98,15 @@ export class GameScene extends Phaser.Scene {
     if (ui.screen === 'play' && (this.sync >= 200 || w.over)) {
       this.sync = 0;
       const s = e.score();
-      ui.budget = w.budget; ui.index = s.index; ui.time = s.time; ui.over = w.over; ui.nextQuartier = e.nextQuartierIn();
-      if (w.over) { ui.best = saveBest(browserStorage, s); ui.screen = 'over'; }
+      ui.budget = w.budget;
+      ui.index = s.index;
+      ui.time = s.time;
+      ui.over = w.over;
+      ui.nextQuartier = e.nextQuartierIn();
+      if (w.over) {
+        ui.best = saveBest(browserStorage, s);
+        ui.screen = 'over';
+      }
     }
   }
 }

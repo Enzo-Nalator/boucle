@@ -29,6 +29,7 @@ describe('glyphs', () => {
   it('produit le bon élément SVG pour chaque type de forme', () => {
     expect(glyphSvg('cercle')).toMatch(/^<circle /);
     expect(glyphSvg('carre-arrondi')).toMatch(/^<rect .*rx="/);
-    for (const s of ['carre', 'triangle', 'losange', 'croix', 'hexagone'] as ShapeName[]) expect(glyphSvg(s)).toMatch(/^<polygon points="/);
+    for (const s of ['carre', 'triangle', 'losange', 'croix', 'hexagone'] as ShapeName[])
+      expect(glyphSvg(s)).toMatch(/^<polygon points="/);
   });
 });

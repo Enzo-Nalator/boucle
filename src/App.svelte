@@ -28,9 +28,28 @@
 </div>
 
 <style>
-  :global(html, body) { margin: 0; height: 100%; background: #f4f1ea; overflow: hidden; overscroll-behavior: none; }
-  :global(button) { touch-action: manipulation; }
-  .stage { position: fixed; inset: 0; touch-action: none; }
-  .overlay { position: fixed; inset: 0; pointer-events: none; }
-  .playing { user-select: none; -webkit-user-select: none; }
+  :global(html, body) {
+    margin: 0;
+    height: 100%;
+    background: #f4f1ea;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  :global(button) {
+    touch-action: manipulation;
+  }
+  .stage {
+    position: fixed;
+    inset: 0;
+    touch-action: none;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+  .playing {
+    user-select: none;
+    -webkit-user-select: none;
+  }
 </style>

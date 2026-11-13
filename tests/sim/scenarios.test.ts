@@ -22,13 +22,18 @@ describe('scénarios de partie', () => {
   });
   it('R7 : quartier relié à une décharge seule ⇒ indice 0 après 120 s', () => {
     const w = createWorld(1);
-    const q = place(w, 'quartier', 160, 360), d = place(w, 'decharge', 400, 360);
+    const q = place(w, 'quartier', 160, 360),
+      d = place(w, 'decharge', 400, 360);
     link(w, q, d);
     run(w, 120);
     expect(circularityIndex(w)).toBe(0);
   });
   it('même graine, même bot ⇒ même score', () => {
-    const play = () => { const e = createEndless(5); playGoodGame(e, 200); return e.score(); };
+    const play = () => {
+      const e = createEndless(5);
+      playGoodGame(e, 200);
+      return e.score();
+    };
     const a = play();
     expect(a.time).toBeGreaterThan(0);
     expect(a).toEqual(play());

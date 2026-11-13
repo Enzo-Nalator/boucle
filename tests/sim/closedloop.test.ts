@@ -9,9 +9,16 @@ describe('boucle fermée', () => {
     w.budget = 1e6;
     w.contamination = 0.1;
     w.activeRes = ['plastique'];
-    const q = place(w, 'quartier', 0, 0), t = place(w, 'tri', 100, 0), d = place(w, 'decharge', 100, 80);
-    const r = place(w, 'recycleur', 200, 0, 'plastique'), f = place(w, 'fabricant', 300, 0);
-    link(w, q, t); link(w, t, r); link(w, t, d); link(w, r, f); link(w, f, q);
+    const q = place(w, 'quartier', 0, 0),
+      t = place(w, 'tri', 100, 0),
+      d = place(w, 'decharge', 100, 80);
+    const r = place(w, 'recycleur', 200, 0, 'plastique'),
+      f = place(w, 'fabricant', 300, 0);
+    link(w, q, t);
+    link(w, t, r);
+    link(w, t, d);
+    link(w, r, f);
+    link(w, f, q);
     let returns = 0;
     for (let sec = 1; sec <= 200; sec++) {
       const before = w.actors[0].returns.length;

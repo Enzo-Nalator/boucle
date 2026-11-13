@@ -1,5 +1,11 @@
-export interface Pt { x: number; y: number }
-export interface Size { w: number; h: number }
+export interface Pt {
+  x: number;
+  y: number;
+}
+export interface Size {
+  w: number;
+  h: number;
+}
 
 /**
  * Position de l’infobulle près du curseur : en bas à droite par défaut, de l’autre côté

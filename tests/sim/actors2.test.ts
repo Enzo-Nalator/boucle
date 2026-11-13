@@ -7,10 +7,22 @@ import { run, place, link } from '../helpers';
 import type { Packet, Res, World } from '../../src/sim/types';
 
 let id = 5000;
-const pk = (o: Partial<Packet> = {}, res: Res = 'plastique'): Packet =>
-  ({ id: id++, res, kind: 'dechet', dirty: false, reusable: false, repaired: false, ...o });
+const pk = (o: Partial<Packet> = {}, res: Res = 'plastique'): Packet => ({
+  id: id++,
+  res,
+  kind: 'dechet',
+  dirty: false,
+  reusable: false,
+  repaired: false,
+  ...o,
+});
 const get = (w: World, i: number) => w.actors.find(a => a.id === i)!;
-const quiet = (seed = 1) => { const w = createWorld(seed); w.emitRate = 0; w.budget = 1e6; return w; };
+const quiet = (seed = 1) => {
+  const w = createWorld(seed);
+  w.emitRate = 0;
+  w.budget = 1e6;
+  return w;
+};
 
 /** Tri niveau `level`, 1 route juste + 1 mauvaise (verre) : les erreurs atterrissent sur la mauvaise (fuite). */
 function errors(level: number, n = 1000) {
@@ -19,7 +31,8 @@ function errors(level: number, n = 1000) {
   get(w, t).level = level;
   const good = place(w, 'recycleur', 100, 0, 'plastique');
   const bad = place(w, 'recycleur', 170, 0, 'verre');
-  link(w, t, good); link(w, t, bad);
+  link(w, t, good);
+  link(w, t, bad);
   for (const x of w.routes) x.length = 0;
   for (let i = 0; i < n; i++) {
     get(w, t).out.push(pk());
@@ -30,11 +43,20 @@ function errors(level: number, n = 1000) {
 }
 
 describe('tri', () => {
-  it('niveau 1 : 80 à 120 erreurs sur 1000', () => { const e = errors(1); expect(e).toBeGreaterThanOrEqual(80); expect(e).toBeLessThanOrEqual(120); });
-  it('niveau 3 : moins d\'erreurs qu\'au niveau 1, et < 70', () => { const e3 = errors(3); expect(e3).toBeLessThan(errors(1)); expect(e3).toBeLessThan(70); });
+  it('niveau 1 : 80 à 120 erreurs sur 1000', () => {
+    const e = errors(1);
+    expect(e).toBeGreaterThanOrEqual(80);
+    expect(e).toBeLessThanOrEqual(120);
+  });
+  it("niveau 3 : moins d'erreurs qu'au niveau 1, et < 70", () => {
+    const e3 = errors(3);
+    expect(e3).toBeLessThan(errors(1));
+    expect(e3).toBeLessThan(70);
+  });
   it('paquet propre + seule route vers une décharge : reste bloqué', () => {
     const w = quiet();
-    const t = place(w, 'tri', 0, 0), d = place(w, 'decharge', 100, 0);
+    const t = place(w, 'tri', 0, 0),
+      d = place(w, 'decharge', 100, 0);
     link(w, t, d);
     get(w, t).out.push(pk());
     run(w, 10);
@@ -43,14 +65,20 @@ describe('tri', () => {
   });
   it('une seule route : le tri ne peut pas se tromper', () => {
     const w = quiet(7);
-    const t = place(w, 'tri', 0, 0), r = place(w, 'recycleur', 100, 0, 'plastique');
+    const t = place(w, 'tri', 0, 0),
+      r = place(w, 'recycleur', 100, 0, 'plastique');
     link(w, t, r);
-    for (let i = 0; i < 200; i++) { get(w, t).out.push(pk()); step(w, []); get(w, r).queue = []; }
+    for (let i = 0; i < 200; i++) {
+      get(w, t).out.push(pk());
+      step(w, []);
+      get(w, r).queue = [];
+    }
     expect(w.log.filter(l => l.ev === 'leak')).toHaveLength(0);
   });
   it('paquet sale + route vers recycleur seul : reste bloqué', () => {
     const w = quiet();
-    const t = place(w, 'tri', 0, 0), r = place(w, 'recycleur', 100, 0, 'plastique');
+    const t = place(w, 'tri', 0, 0),
+      r = place(w, 'recycleur', 100, 0, 'plastique');
     link(w, t, r);
     get(w, t).queue.push(pk({ dirty: true }));
     run(w, 10);
@@ -59,8 +87,11 @@ describe('tri', () => {
   });
   it('paquet sale va à la décharge', () => {
     const w = quiet();
-    const t = place(w, 'tri', 0, 0), r = place(w, 'recycleur', 100, 0, 'plastique'), d = place(w, 'decharge', 0, 100);
-    link(w, t, r); link(w, t, d);
+    const t = place(w, 'tri', 0, 0),
+      r = place(w, 'recycleur', 100, 0, 'plastique'),
+      d = place(w, 'decharge', 0, 100);
+    link(w, t, r);
+    link(w, t, d);
     get(w, t).out.push(pk({ dirty: true }));
     step(w, []);
     expect(w.routes[1].transit).toHaveLength(1);
@@ -95,7 +126,9 @@ describe('fabricant / réparateur / collecteur', () => {
   });
   it('débit ×2 au niveau 3', () => {
     const count = (level: number) => {
-      const w = quiet(); const a = get(w, place(w, 'collecteur', 0, 0)); a.level = level;
+      const w = quiet();
+      const a = get(w, place(w, 'collecteur', 0, 0));
+      a.level = level;
       a.queue.push(...Array.from({ length: 6 }, () => pk()));
       for (let i = 0; i < 20; i++) processActor(w, a); // 1 s
       return a.out.length;
@@ -108,10 +141,12 @@ describe('fabricant / réparateur / collecteur', () => {
 describe('dispatch', () => {
   function two() {
     const w = quiet();
-    const s = place(w, 'collecteur', 0, 0), a = place(w, 'decharge', 100, 0), b = place(w, 'decharge', 0, 100);
+    const s = place(w, 'collecteur', 0, 0),
+      a = place(w, 'decharge', 100, 0),
+      b = place(w, 'decharge', 0, 100);
     return { w, s, ra: link(w, s, a), rb: link(w, s, b), src: get(w, s) };
   }
-  it('priorité : la route prioritaire est utilisée d\'abord', () => {
+  it("priorité : la route prioritaire est utilisée d'abord", () => {
     const { w, ra, rb, src } = two();
     w.routes.find(r => r.id === rb)!.priority = 1;
     src.out.push(pk(), pk());
@@ -128,9 +163,14 @@ describe('dispatch', () => {
     expect(w.routes.find(r => r.id === rb)!.transit.map(t => t.packet.id)).toEqual([ps[1].id, ps[3].id]);
   });
   it('capacité : 4 par route (tri), collecteur 2 + (niveau − 1)', () => {
-    for (const [kind, level, cap] of [['tri', 1, 4], ['collecteur', 1, 2], ['collecteur', 2, 3]] as const) {
+    for (const [kind, level, cap] of [
+      ['tri', 1, 4],
+      ['collecteur', 1, 2],
+      ['collecteur', 2, 3],
+    ] as const) {
       const w = quiet();
-      const s = place(w, kind, 0, 0), d = place(w, 'collecteur', 1000, 0);
+      const s = place(w, kind, 0, 0),
+        d = place(w, 'collecteur', 1000, 0);
       get(w, s).level = level;
       link(w, s, d);
       get(w, s).out.push(...Array.from({ length: 8 }, () => pk()));
@@ -140,7 +180,8 @@ describe('dispatch', () => {
   });
   it('attend en bout de route quand la file destinataire est pleine', () => {
     const w = quiet();
-    const s = place(w, 'collecteur', 0, 0), t = place(w, 'tri', 100, 0);
+    const s = place(w, 'collecteur', 0, 0),
+      t = place(w, 'tri', 100, 0);
     link(w, s, t);
     const dest = get(w, t);
     dest.queue.push(...Array.from({ length: 10 }, () => pk()));

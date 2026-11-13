@@ -24,10 +24,46 @@
 {/if}
 
 <style>
-  .panel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #f4f1ea; color: #2b2f36; font-family: system-ui, sans-serif; pointer-events: auto; }
-  h1 { margin: 0 0 16px; font-size: 56px; }
-  button { min-width: 240px; min-height: 56px; border: 2px solid #2b2f36; border-radius: 12px; background: #f4f1ea; color: #2b2f36; font: 700 20px system-ui, sans-serif; cursor: pointer; }
-  .primary { background: #2b2f36; color: #f4f1ea; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; border-style: dashed; }
-  small { margin-top: -8px; opacity: 0.6; }
+  .panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: #f4f1ea;
+    color: #2b2f36;
+    font-family: system-ui, sans-serif;
+    pointer-events: auto;
+  }
+  h1 {
+    margin: 0 0 16px;
+    font-size: 56px;
+  }
+  button {
+    min-width: 240px;
+    min-height: 56px;
+    border: 2px solid #2b2f36;
+    border-radius: 12px;
+    background: #f4f1ea;
+    color: #2b2f36;
+    font:
+      700 20px system-ui,
+      sans-serif;
+    cursor: pointer;
+  }
+  .primary {
+    background: #2b2f36;
+    color: #f4f1ea;
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-style: dashed;
+  }
+  small {
+    margin-top: -8px;
+    opacity: 0.6;
+  }
 </style>

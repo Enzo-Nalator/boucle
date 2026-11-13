@@ -6,7 +6,13 @@ const quartiers = (e: ReturnType<typeof createEndless>) => e.world.actors.filter
 // Contourne VOLONTAIREMENT les règles de la sim (vide les files, remet over à null, budget illimité) :
 // on ne teste ici que le calendrier du directeur, pas la survie.
 function advance(e: ReturnType<typeof createEndless>, s: number, each?: () => void) {
-  for (let i = 0; i < Math.round(s / DT); i++) { e.step([]); each?.(); e.world.over = null; for (const a of e.world.actors) a.queue = []; e.world.budget = 1e6; }
+  for (let i = 0; i < Math.round(s / DT); i++) {
+    e.step([]);
+    each?.();
+    e.world.over = null;
+    for (const a of e.world.actors) a.queue = [];
+    e.world.budget = 1e6;
+  }
 }
 const advanceTo = (e: ReturnType<typeof createEndless>, t: number) => advance(e, t - e.world.time);
 
@@ -17,7 +23,8 @@ describe('directeur mode A', () => {
     expect(e.world.activeRes).toEqual(['plastique', 'verre']);
   });
   it('ordre cyclique aux ticks 60/120/180/240', () => {
-    const e = createEndless(1), w = e.world;
+    const e = createEndless(1),
+      w = e.world;
     advanceTo(e, 59);
     expect([quartiers(e), w.activeRes.length, w.contamination, w.emitRate]).toEqual([1, 2, 0.1, 0.5]);
     advanceTo(e, 61); // 1 : quartier, exactement SLOTS[0]
@@ -40,8 +47,11 @@ describe('directeur mode A', () => {
     expect(w.contamination).toBeCloseTo(0.15);
   });
   it('contamination plafonnée à 0.4', () => {
-    const e = createEndless(1); let max = 0;
-    advance(e, 61 * 4 * 9, () => { max = Math.max(max, e.world.contamination); });
+    const e = createEndless(1);
+    let max = 0;
+    advance(e, 61 * 4 * 9, () => {
+      max = Math.max(max, e.world.contamination);
+    });
     expect(max).toBeLessThanOrEqual(0.4 + 1e-9);
     expect(max).toBeCloseTo(0.4);
   });
@@ -57,7 +67,10 @@ describe('directeur mode A', () => {
     e.step([{ type: 'place', kind: 'collecteur', x: SLOTS[0].x, y: SLOTS[0].y }]);
     advanceTo(e, 61);
     expect(quartiers(e)).toBe(2);
-    expect(e.world.actors.find(a => a.kind === 'quartier' && a.id !== 1)).toMatchObject({ x: SLOTS[1].x, y: SLOTS[1].y });
+    expect(e.world.actors.find(a => a.kind === 'quartier' && a.id !== 1)).toMatchObject({
+      x: SLOTS[1].x,
+      y: SLOTS[1].y,
+    });
   });
   it('matières épuisées : un nouvel événement matière ne fait rien', () => {
     const e = createEndless(1);
@@ -68,17 +81,28 @@ describe('directeur mode A', () => {
   });
   it('slots valides', () => {
     const all = [FIRST_QUARTIER, ...SLOTS];
-    for (const p of all) { expect(p.x).toBeGreaterThan(0); expect(p.x).toBeLessThan(1280); expect(p.y).toBeGreaterThan(0); expect(p.y).toBeLessThan(720); }
-    for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) expect(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y)).toBeGreaterThanOrEqual(60);
+    for (const p of all) {
+      expect(p.x).toBeGreaterThan(0);
+      expect(p.x).toBeLessThan(1280);
+      expect(p.y).toBeGreaterThan(0);
+      expect(p.y).toBeLessThan(720);
+    }
+    for (let i = 0; i < all.length; i++)
+      for (let j = i + 1; j < all.length; j++)
+        expect(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y)).toBeGreaterThanOrEqual(60);
   });
   it('pannes : aucune avant 300 s, 10 s, jamais un quartier, au moins une après 360 s', () => {
-    const e = createEndless(3), w = e.world;
+    const e = createEndless(3),
+      w = e.world;
     e.step([{ type: 'place', kind: 'tri', x: 640, y: 360 }]);
     const seen = new Map<number, number>();
-    let early = false, late = false, count = 0;
+    let early = false,
+      late = false,
+      count = 0;
     advance(e, 365, () => {
       for (const a of w.actors) {
-        if (a.offlineUntil > 0 && seen.get(a.id) !== a.offlineUntil) { // panne qui vient d'être posée
+        if (a.offlineUntil > 0 && seen.get(a.id) !== a.offlineUntil) {
+          // panne qui vient d'être posée
           seen.set(a.id, a.offlineUntil);
           count++;
           expect(a.kind).not.toBe('quartier');

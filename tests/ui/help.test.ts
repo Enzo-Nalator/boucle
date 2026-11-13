@@ -79,27 +79,27 @@ describe('HELP_PAGES', () => {
   });
 
   it('la page « Lire le plateau » a un paragraphe par repère numéroté (4)', () => {
-    const board = HELP_PAGES.find((p) => p.layout === 'board');
+    const board = HELP_PAGES.find(p => p.layout === 'board');
     expect(board?.paragraphs).toHaveLength(4);
   });
 
   it('chaque page a une mise en page connue', () => {
-    expect(HELP_PAGES.map((p) => p.layout)).toEqual(['goal', 'board', 'actors', 'actors', 'tools', 'tips']);
+    expect(HELP_PAGES.map(p => p.layout)).toEqual(['goal', 'board', 'actors', 'actors', 'tools', 'tips']);
   });
 
   it('donne à chaque page un mot géant de fond, tous différents', () => {
-    const words = HELP_PAGES.map((p) => p.backdrop);
+    const words = HELP_PAGES.map(p => p.backdrop);
     for (const w of words) expect(w.length).toBeGreaterThan(3);
     expect(new Set(words).size).toBe(words.length);
   });
 
   it('présente chacun des 7 acteurs sur exactement une page', () => {
-    const seen = HELP_PAGES.flatMap((p) => p.actors ?? []);
+    const seen = HELP_PAGES.flatMap(p => p.actors ?? []);
     expect([...seen].sort()).toEqual([...KINDS].sort());
   });
 
-  it("présente tous les outils sur la page des outils", () => {
-    const tools = HELP_PAGES.flatMap((p) => p.tools ?? []);
+  it('présente tous les outils sur la page des outils', () => {
+    const tools = HELP_PAGES.flatMap(p => p.tools ?? []);
     expect([...tools].sort()).toEqual([...ALL_TOOLS].sort());
   });
 });

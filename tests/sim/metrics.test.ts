@@ -12,14 +12,18 @@ describe('metrics', () => {
   it('indice = (recycle + repair) / emit', () => {
     const w = createWorld(1);
     w.time = 30;
-    logN(w, 'emit', 10, 10); logN(w, 'recycle', 4, 10); logN(w, 'repair', 1, 10);
+    logN(w, 'emit', 10, 10);
+    logN(w, 'recycle', 4, 10);
+    logN(w, 'repair', 1, 10);
     expect(circularityIndex(w)).toBe(0.5);
   });
   it('ignore les entrées de plus de 60 s', () => {
     const w = createWorld(1);
     w.time = 61;
-    logN(w, 'emit', 10, 0); logN(w, 'recycle', 10, 0);
-    logN(w, 'emit', 2, 50); logN(w, 'recycle', 1, 50);
+    logN(w, 'emit', 10, 0);
+    logN(w, 'recycle', 10, 0);
+    logN(w, 'emit', 2, 50);
+    logN(w, 'recycle', 1, 50);
     expect(circularityIndex(w)).toBe(0.5);
   });
   it('0 sans émission', () => {
@@ -72,7 +76,8 @@ describe('entretien et pannes', () => {
   });
   it('hors service : ne dispatche pas', () => {
     const w = createWorld(1);
-    const t = place(w, 'tri', 0, 0), d = place(w, 'decharge', 100, 0);
+    const t = place(w, 'tri', 0, 0),
+      d = place(w, 'decharge', 100, 0);
     link(w, t, d);
     const a = w.actors.find(x => x.id === t)!;
     a.offlineUntil = 100;

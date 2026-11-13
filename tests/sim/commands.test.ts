@@ -4,14 +4,24 @@ import { createWorld, applyCommand } from '../../src/sim/world';
 import { routeLength } from '../../src/sim/world';
 import type { World, Packet } from '../../src/sim/types';
 
-const pk = (id: number): Packet => ({ id, res: 'verre', kind: 'dechet', dirty: false, reusable: false, repaired: false });
+const pk = (id: number): Packet => ({
+  id,
+  res: 'verre',
+  kind: 'dechet',
+  dirty: false,
+  reusable: false,
+  repaired: false,
+});
 function two(): World {
   const w = createWorld(1);
   applyCommand(w, { type: 'place', kind: 'tri', x: 0, y: 0 });
   applyCommand(w, { type: 'place', kind: 'recycleur', x: 200, y: 0 });
   return w;
 }
-const line = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+const line = [
+  { x: 0, y: 0 },
+  { x: 100, y: 0 },
+];
 
 describe('commandes', () => {
   it('place tri coûte 40 et initialise l acteur', () => {
@@ -71,8 +81,19 @@ describe('commandes', () => {
     const w = two();
     applyCommand(w, { type: 'route', from: 1, to: 2, points: line });
     w.routes[0].transit = [1, 2].map(i => ({ packet: pk(i), d: 0 }));
-    const b = w.budget, id = w.nextId;
-    expect(applyCommand(w, { type: 'route', from: 2, to: 1, points: [{ x: 100, y: 0 }, { x: 0, y: 0 }] })).toBe(true);
+    const b = w.budget,
+      id = w.nextId;
+    expect(
+      applyCommand(w, {
+        type: 'route',
+        from: 2,
+        to: 1,
+        points: [
+          { x: 100, y: 0 },
+          { x: 0, y: 0 },
+        ],
+      }),
+    ).toBe(true);
     expect(w.routes).toEqual([]);
     expect(w.budget).toBe(b);
     expect(w.nextId).toBe(id);
@@ -117,8 +138,12 @@ describe('commandes', () => {
   it('priority cycle', () => {
     const w = two();
     applyCommand(w, { type: 'route', from: 1, to: 2, points: line });
-    const id = w.routes[0].id, seen: number[] = [];
-    for (let i = 0; i < 3; i++) { applyCommand(w, { type: 'priority', routeId: id }); seen.push(w.routes[0].priority); }
+    const id = w.routes[0].id,
+      seen: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      applyCommand(w, { type: 'priority', routeId: id });
+      seen.push(w.routes[0].priority);
+    }
     expect(seen).toEqual([1, 2, 0]);
   });
   it('renovate vide la file', () => {

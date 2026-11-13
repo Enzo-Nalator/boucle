@@ -11,7 +11,7 @@ describe('placeTooltip', () => {
   it('bascule à gauche du curseur près du bord droit', () => {
     expect(placeTooltip({ x: 900, y: 100 }, size, view)).toEqual({ x: 684, y: 116 });
   });
-  it('bascule au-dessus du curseur près du bord bas (barre d\'outils)', () => {
+  it("bascule au-dessus du curseur près du bord bas (barre d'outils)", () => {
     expect(placeTooltip({ x: 100, y: 780 }, size, view)).toEqual({ x: 116, y: 704 });
   });
   it('ne sort jamais de la fenêtre (marge 8 px)', () => {
