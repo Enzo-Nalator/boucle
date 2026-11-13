@@ -1,9 +1,10 @@
+import type { ActionReturn } from 'svelte/action';
 import { tip } from './store.svelte';
 
 interface Info { title: string; text: string }
 
 /** Action Svelte : infobulle qui suit la souris ou le stylet (pas le doigt) et s'affiche aussi au focus clavier. */
-export function tooltip(node: HTMLElement, info: Info) {
+export function tooltip(node: HTMLElement, info: Info): ActionReturn<Info> {
   let current = info;
   const show = (x: number, y: number) => {
     tip.title = current.title;

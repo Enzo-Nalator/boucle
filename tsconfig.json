@@ -8,5 +8,5 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["tests/**/*.ts", "src/**/*.ts", "src/**/*.svelte", "vite.config.ts"]
+  "include": ["tests/**/*.ts", "src/**/*.ts", "src/**/*.svelte", "vite.config.ts", "vitest.config.ts"]
 }

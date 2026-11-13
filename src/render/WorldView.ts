@@ -5,7 +5,7 @@ import { levelPips, pointAt, routeWidth } from './layout';
 import { ACTOR_DEFS } from '../sim/defs';
 
 const SIZE = 22, RING = SIZE + 8;
-export const vec = (pts: { x: number; y: number }[]) => pts.map(p => new Phaser.Math.Vector2(p.x, p.y));
+export const vec = (pts: { x: number; y: number }[]): Phaser.Math.Vector2[] => pts.map(p => new Phaser.Math.Vector2(p.x, p.y));
 type G = Phaser.GameObjects.Graphics;
 
 function poly(g: G, x: number, y: number, r: number, n: number, rot: number) {
