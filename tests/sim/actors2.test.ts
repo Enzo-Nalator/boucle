@@ -53,15 +53,37 @@ describe('tri', () => {
     expect(e3).toBeLessThan(errors(1));
     expect(e3).toBeLessThan(70);
   });
-  it('paquet propre + seule route vers une décharge : reste bloqué', () => {
+  it('paquet propre + seule route vers une décharge : marqué coincé, puis jeté (fuite) sans rien envoyer', () => {
     const w = quiet();
     const t = place(w, 'tri', 0, 0),
       d = place(w, 'decharge', 100, 0);
     link(w, t, d);
     get(w, t).out.push(pk());
-    run(w, 10);
-    expect(get(w, t).out).toHaveLength(1);
+    run(w, 4);
+    expect(get(w, t).out[0].stuck).toBeGreaterThan(3);
     expect(w.routes[0].transit).toHaveLength(0);
+    run(w, 6);
+    expect(get(w, t).out).toHaveLength(0);
+    expect(w.log.filter(l => l.ev === 'leak')).toHaveLength(1);
+    expect(w.routes[0].transit).toHaveLength(0);
+  });
+  it('un paquet coincé en tête ne bloque pas les suivants', () => {
+    const w = quiet();
+    const t = place(w, 'tri', 0, 0),
+      r = place(w, 'recycleur', 100, 0, 'plastique');
+    link(w, t, r);
+    get(w, t).out.push(pk({}, 'verre'), pk({}, 'plastique'));
+    run(w, 3);
+    const rq = get(w, r);
+    expect([...rq.queue, ...rq.out].length).toBe(1); // le plastique est passé (recyclé ou en file)
+    expect(get(w, t).out.map(p => p.res)).toEqual(['verre']);
+  });
+  it('sans aucune route, rien n’est jeté', () => {
+    const w = quiet();
+    const t = place(w, 'tri', 0, 0);
+    get(w, t).out.push(pk());
+    run(w, 20);
+    expect(get(w, t).out).toHaveLength(1);
   });
   it('une seule route : le tri ne peut pas se tromper', () => {
     const w = quiet(7);
@@ -75,13 +97,13 @@ describe('tri', () => {
     }
     expect(w.log.filter(l => l.ev === 'leak')).toHaveLength(0);
   });
-  it('paquet sale + route vers recycleur seul : reste bloqué', () => {
+  it('paquet sale + route vers recycleur seul : jamais envoyé, reste en attente', () => {
     const w = quiet();
     const t = place(w, 'tri', 0, 0),
       r = place(w, 'recycleur', 100, 0, 'plastique');
     link(w, t, r);
     get(w, t).queue.push(pk({ dirty: true }));
-    run(w, 10);
+    run(w, 6);
     expect(get(w, t).out).toHaveLength(1);
     expect(w.routes[0].transit).toHaveLength(0);
   });

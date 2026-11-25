@@ -7,7 +7,7 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     parent,
     width: 1280,
     height: 720,
-    backgroundColor: '#f4f1ea',
+    backgroundColor: '#cfe8b8',
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [GameScene],
   });

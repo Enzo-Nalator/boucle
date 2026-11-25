@@ -31,7 +31,7 @@
   :global(html, body) {
     margin: 0;
     height: 100%;
-    background: #f4f1ea;
+    background: #cfe8b8;
     overflow: hidden;
     overscroll-behavior: none;
   }

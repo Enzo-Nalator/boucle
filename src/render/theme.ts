@@ -10,13 +10,25 @@ export const RES_COLOR: Record<Res, number> = {
   bio: 0xe08a1e,
   papier: 0xd9c84a,
 };
-export type ShapeName = 'cercle' | 'carre' | 'carre-arrondi' | 'triangle' | 'losange' | 'croix' | 'hexagone';
-export const ACTOR_SHAPE: Record<ActorKind, ShapeName> = {
-  quartier: 'cercle',
-  collecteur: 'carre-arrondi',
-  tri: 'carre',
-  recycleur: 'triangle',
-  fabricant: 'losange',
-  reparateur: 'croix',
-  decharge: 'hexagone',
+
+/** Direction « ville » : herbe, bitume, pastille de fond et libellé de chaque acteur. */
+export const GRASS = 0xcfe8b8;
+export const ROAD = 0x8a8f98;
+export const ACTOR_BASE: Record<ActorKind, number> = {
+  quartier: 0xfde8c8,
+  collecteur: 0xe3e6ec,
+  tri: 0xdcd3ff,
+  recycleur: 0xe3e6ec,
+  fabricant: 0xffe9a8,
+  reparateur: 0xffd3d3,
+  decharge: 0xd9cfc4,
+};
+export const ACTOR_LABEL: Record<ActorKind, string> = {
+  quartier: 'Quartier',
+  collecteur: 'Dépôt',
+  tri: 'Tri',
+  recycleur: 'Recycleur',
+  fabricant: 'Fabricant',
+  reparateur: 'Réparateur',
+  decharge: 'Décharge',
 };

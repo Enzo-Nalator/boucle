@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { buildingSvg, truckSvg } from '../buildings';
   import { START_BUDGET } from '../../sim/defs';
   import type { HelpPage } from '../help';
   import { reducedMotion } from './motion';
@@ -16,34 +17,34 @@
     <svg
       viewBox="0 0 300 300"
       role="img"
-      aria-label="La boucle : quartier, tri, recycleur et fabricant reliés en cercle par des routes"
+      aria-label="La boucle : quartier, tri, recycleur et fabricant reliés en cercle par des routes où roulent des camions"
     >
-      <g fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
-        <path id="{uid}-r1" d="M74 139 L138 75" stroke="#9aa0a6" />
-        <path id="{uid}-r2" d="M166 60 H205 L240 95 V130" stroke="#3ba7ff" />
-        <path id="{uid}-r3" d="M240 168 V195 L200 235 H174" stroke="#3ba7ff" />
-        <path id="{uid}-r4" d="M128 240 H100 L60 200 V168" stroke="#e08a1e" />
-      </g>
-      <circle cx="60" cy="150" r="17" fill="#2b2f36" />
-      <rect x="134" y="44" width="32" height="32" fill="#2b2f36" />
-      <polygon
-        points="240,131 258,166 222,166"
-        fill="#3ba7ff"
-        stroke="#2b2f36"
-        stroke-width="2"
-        stroke-linejoin="round"
-      />
-      <polygon points="150,222 168,240 150,258 132,240" fill="#2b2f36" />
+      <rect width="300" height="300" fill="#cfe8b8" />
+      {#each ['M74 139 L138 75', 'M166 60 H205 L240 95 V130', 'M240 168 V195 L200 235 H174', 'M128 240 H100 L60 200 V168'] as d, i}
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path {d} stroke="#6b7078" stroke-width="16" /><path id="{uid}-r{i + 1}" {d} stroke="#8a8f98" stroke-width="12" /><path
+            {d}
+            stroke="#fff"
+            stroke-width="2"
+            stroke-dasharray="7 9"
+          />
+        </g>
+      {/each}
+      <g transform="translate(28.0 118.0) scale(0.64)">{@html buildingSvg('quartier')}</g>
+      <g transform="translate(118.0 28.0) scale(0.64)">{@html buildingSvg('tri')}</g>
+      <g transform="translate(208.0 118.0) scale(0.64)">{@html buildingSvg('recycleur')}</g>
+      <g transform="translate(118.0 208.0) scale(0.64)">{@html buildingSvg('fabricant')}</g>
       {#if !still}
         {#each [['r1', '#9aa0a6', '3s', '0s'], ['r2', '#3ba7ff', '3.4s', '0s'], ['r3', '#3ba7ff', '3.4s', '-1s'], ['r4', '#e08a1e', '3s', '-0.5s']] as [id, c, dur, begin]}
-          <circle r="5" fill={c}
-            ><animateMotion {dur} {begin} repeatCount="indefinite"><mpath href="#{uid}-{id}" /></animateMotion></circle
+          <g
+            ><animateMotion {dur} {begin} repeatCount="indefinite" rotate="auto"><mpath href="#{uid}-{id}" /></animateMotion
+            >{@html truckSvg(c)}</g
           >
         {/each}
       {/if}
-      <g fill="#2b2f36" font-size="12" font-family="system-ui, sans-serif">
-        <text x="2" y="192">quartier</text><text x="172" y="46">tri</text>
-        <text x="216" y="152" text-anchor="end">recycleur</text><text x="176" y="268">fabricant</text>
+      <g fill="#2b2f36" font-size="12" font-weight="700" font-family="system-ui, sans-serif">
+        <text x="60" y="210" text-anchor="middle">quartier</text><text x="150" y="102" text-anchor="middle">tri</text>
+        <text x="240" y="210" text-anchor="middle">recycleur</text><text x="150" y="285" text-anchor="middle">fabricant</text>
       </g>
     </svg>
     <p class="hb-cap" style="max-width: 280px">Le déchet devient objet, l’objet redevient déchet.</p>

@@ -1,18 +1,5 @@
-import type { ShapeName } from '../render/theme';
-import { ACTOR_SHAPE } from '../render/theme';
 import type { ActorKind } from '../sim/types';
 import type { Tool } from './store.svelte';
-
-/** Formes SVG (viewBox 24×24) alignées sur les formes dessinées dans le jeu. */
-export const SHAPE_SVG: Record<ShapeName, string> = {
-  cercle: '<circle cx="12" cy="12" r="8"/>',
-  carre: '<rect x="4" y="4" width="16" height="16"/>',
-  'carre-arrondi': '<rect x="4" y="4" width="16" height="16" rx="5"/>',
-  triangle: '<polygon points="12,3 21,20 3,20"/>',
-  losange: '<polygon points="12,2 22,12 12,22 2,12"/>',
-  croix: '<polygon points="9,3 15,3 15,9 21,9 21,15 15,15 15,21 9,21 9,15 3,15 3,9 9,9"/>',
-  hexagone: '<polygon points="12,2.5 20.2,7.25 20.2,16.75 12,21.5 3.8,16.75 3.8,7.25"/>',
-};
 
 const STROKE = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
 const ACTION_SVG: Record<'route' | 'upgrade' | 'renovate' | 'priority' | 'delete', string> = {
@@ -23,7 +10,17 @@ const ACTION_SVG: Record<'route' | 'upgrade' | 'renovate' | 'priority' | 'delete
   delete: `<path d="M6 6 L18 18 M18 6 L6 18" ${STROKE} stroke-width="3"/>`,
 };
 
-export const actorIcon = (kind: ActorKind): string => SHAPE_SVG[ACTOR_SHAPE[kind]];
+/** Pictogrammes « ville » des acteurs (viewBox 24×24), en phase avec le rendu du jeu. */
+const BUILDING_SVG: Record<ActorKind, string> = {
+  quartier: '<polygon points="12,3 21,11 3,11"/><rect x="5" y="11" width="14" height="9"/>',
+  collecteur: '<polygon points="12,4 22,10 2,10"/><rect x="4" y="10" width="16" height="10"/>',
+  tri: '<rect x="3" y="9" width="18" height="11"/><rect x="5" y="3" width="4" height="6"/><rect x="12" y="5" width="4" height="4"/>',
+  recycleur: '<rect x="3" y="9" width="18" height="11"/><rect x="5" y="3" width="4" height="6"/>',
+  fabricant: '<polygon points="3,20 3,8 9,12 9,8 15,12 15,8 21,12 21,20"/>',
+  reparateur: '<polygon points="12,3 21,11 3,11"/><rect x="5" y="11" width="14" height="9"/>',
+  decharge: '<polygon points="2,20 12,4 22,20"/>',
+};
+export const actorIcon = (kind: ActorKind): string => BUILDING_SVG[kind];
 
 export function toolIcon(tool: Tool): string {
   return tool.startsWith('place:')

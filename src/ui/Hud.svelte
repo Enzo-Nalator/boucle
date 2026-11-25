@@ -23,7 +23,7 @@
         aria-label="Prochain quartier dans {countdown(ui.nextQuartier)}"
         use:tooltip={info}
       >
-        <span class="plus" aria-hidden="true">+</span><Glyph shape="cercle" size={22} />{countdown(ui.nextQuartier)}
+        <span class="plus" aria-hidden="true">+</span><Glyph kind="quartier" size={26} />{countdown(ui.nextQuartier)}
       </span>
     {/if}
   </div>

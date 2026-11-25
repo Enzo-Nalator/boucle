@@ -8,6 +8,8 @@ export type Packet = {
   dirty: boolean;
   reusable: boolean;
   repaired: boolean;
+  /** Secondes passées dans une file de sortie sans aucune route capable de l'accepter (absent = jamais coincé). */
+  stuck?: number;
 };
 export type Actor = {
   id: number;

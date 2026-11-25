@@ -152,9 +152,9 @@ export const HELP_PAGES: HelpPage[] = [
     title: 'Lire le plateau',
     backdrop: 'PLATEAU',
     paragraphs: [
-      'Chaque acteur a sa forme : cercle pour le quartier, carré pour le tri, triangle pour le recycleur, losange pour le fabricant, croix pour le réparateur, hexagone pour la décharge.',
-      'Les points qui circulent sur les routes sont des paquets. Leur couleur donne la matière (plastique, verre, métal, bio, papier) ; un point sombre au centre signale un paquet contaminé.',
-      'L’anneau autour d’un acteur se remplit avec sa file d’attente. Un anneau qui clignote sur un quartier annonce un débordement imminent.',
+      'Chaque acteur est un bâtiment : des maisons pour le quartier, une usine violette pour le tri, une usine de la couleur de sa matière pour le recycleur, un toit en dents de scie pour le fabricant, une maison à croix pour le réparateur, un tas pour la décharge.',
+      'Les camions qui roulent sur les routes transportent des paquets. La couleur de leur caisse donne la matière (plastique, verre, métal, bio, papier) ; un point sombre sur la caisse signale un paquet contaminé.',
+      'Sous chaque acteur, les cases montrent ce qu’il stocke : la couleur est la matière, un carré est un déchet, un rond de la matière recyclée, un triangle un objet. Une case entourée de rouge et un panneau « ! » signalent un paquet que personne n’accepte ; il ne bloque pas les autres, mais il est jeté au bout de 8 secondes (l’indice baisse). Un halo rouge sur un quartier annonce un débordement.',
       'Un acteur grisé est en panne pendant quelques secondes : il ne traite plus rien, mais les paquets continuent de s’empiler devant lui.',
     ],
   },
@@ -189,7 +189,7 @@ export const HELP_PAGES: HelpPage[] = [
       'Construis ton réseau étape par étape : un réseau complet bâti d’un coup épuise le budget de départ en quelques secondes.',
       'Relie vite chaque nouveau quartier : sans route, il déborde en moins d’une minute.',
       'Un centre de tri protège les recycleurs de la contamination. Garde la décharge pour les paquets que rien d’autre n’accepte.',
-      'Un paquet bloqué devant un acteur qui le refuse gêne toute la file : vérifie qu’une route mène bien chaque matière à son recycleur, ou rénove l’acteur bloqué.',
+      'Un panneau « ! » sur un acteur veut dire qu’un paquet ne trouve aucune route qui l’accepte : relie sa matière à son recycleur, ou les contaminés à une décharge, avant qu’il soit jeté.',
     ],
   },
 ];

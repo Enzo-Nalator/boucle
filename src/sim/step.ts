@@ -7,6 +7,7 @@ import type { Actor, Command, Route, World } from './types';
 
 const ROUTE_CAPACITY = 4,
   OVERFLOW_LIMIT = 5,
+  STUCK_LIMIT = 8,
   EPS = 1e-9;
 
 function emit(w: World, a: Actor) {
@@ -26,29 +27,45 @@ function routeCapacity(w: World, r: Route): number {
   return from.kind === 'collecteur' ? 2 + (from.level - 1) : ROUTE_CAPACITY;
 }
 
-/** Envoie les paquets en attente (quartier : queue ; autres : out) ; blocage en tête si aucune route valide. */
+/**
+ * Envoie les paquets en attente (quartier : queue ; autres : out). Un paquet qui ne peut pas partir (route pleine,
+ * aucune route valide) n'empêche pas les suivants de passer. Hors quartier, un paquet sans aucune route valide
+ * pendant STUCK_LIMIT secondes est jeté (fuite ; pas de fuite tant que l'acteur n'a aucune route) : un déchet mal aiguillé ne bloque jamais la chaîne.
+ */
 function dispatch(w: World, a: Actor) {
   const src = a.kind === 'quartier' ? a.queue : a.out;
   const outs = w.routes.filter(r => r.from === a.id);
-  while (src.length) {
-    const p = src[0];
+  const dest = (r: Route) => w.actors.find(x => x.id === r.to)!;
+  let i = 0;
+  while (i < src.length) {
+    const p = src[i];
+    const fits = (r: Route) =>
+      a.kind !== 'tri' ? accepts(dest(r), p) : p.dirty === (dest(r).kind === 'decharge') && accepts(dest(r), p);
+    if (a.kind !== 'quartier' && !outs.some(fits)) {
+      p.stuck = (p.stuck ?? 0) + DT;
+      if (outs.length && p.stuck > STUCK_LIMIT) {
+        src.splice(i, 1);
+        w.log.push({ t: w.time, ev: 'leak' });
+      } else i++;
+      continue;
+    }
     const free = outs.filter(r => r.transit.length < routeCapacity(w, r));
-    const dest = (r: Route) => w.actors.find(x => x.id === r.to)!;
-    let ok = free.filter(r =>
-      a.kind !== 'tri' ? accepts(dest(r), p) : p.dirty === (dest(r).kind === 'decharge') && accepts(dest(r), p),
-    );
+    let ok = free.filter(fits);
     // Ordre des tirages (tri, paquet propre) : seulement si une route juste est libre, 1 tirage pour l'erreur
     // (erreur ssi < e) ; si erreur ET une mauvaise route libre existe, 1 tirage de plus pour son index.
     if (a.kind === 'tri' && !p.dirty && ok.length && nextRandom(w) < Math.max(0.01, 0.1 - 0.03 * (a.level - 1))) {
       const wrong = free.filter(r => !accepts(dest(r), p));
       if (wrong.length) ok = [wrong[Math.floor(nextRandom(w) * wrong.length)]];
     }
-    if (!ok.length) return;
+    if (!ok.length) {
+      i++;
+      continue;
+    }
     const top = Math.max(...ok.map(r => r.priority));
     const group = ok.filter(r => r.priority === top);
     const r = group[a.rr % group.length];
     a.rr++;
-    r.transit.push({ packet: src.shift()!, d: 0 });
+    r.transit.push({ packet: src.splice(i, 1)[0], d: 0 });
   }
 }
 

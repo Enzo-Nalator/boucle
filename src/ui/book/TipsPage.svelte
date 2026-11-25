@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { buildingSvg, truckSvg } from '../buildings';
   import type { HelpPage } from '../help';
   import Heading from './Heading.svelte';
   import Spread from './Spread.svelte';
@@ -27,17 +28,10 @@
         stroke-linecap="round"
         stroke-linejoin="round"
       />
-      <circle cx="30" cy="35" r="11" fill="#2b2f36" /><circle
-        cx="30"
-        cy="35"
-        r="19"
-        fill="none"
-        stroke="#2b2f36"
-        stroke-width="3"
-      />
-      <polygon points="112,3 124,23 100,23" fill="#3ba7ff" stroke="#2b2f36" stroke-width="2" stroke-linejoin="round" />
+      <g transform="translate(8.0 13.0) scale(0.44)">{@html buildingSvg('quartier')}</g>
+      <g transform="translate(92.0 -4.0) scale(0.4)">{@html buildingSvg('recycleur')}</g>
     {:else if i === 2}
-      <rect x="10" y="26" width="18" height="18" fill="#2b2f36" />
+      <g transform="translate(0.0 15.0) scale(0.4)">{@html buildingSvg('tri')}</g>
       <path
         d="M28 35 H50 L70 15 H92"
         fill="none"
@@ -54,19 +48,12 @@
         stroke-linecap="round"
         stroke-linejoin="round"
       />
-      <polygon points="108,5 120,25 96,25" fill="#3ba7ff" stroke="#2b2f36" stroke-width="2" stroke-linejoin="round" />
-      <polygon points="108,45 118,50 118,60 108,65 98,60 98,50" fill="#2b2f36" opacity=".6" />
+      <g transform="translate(91.0 -2.0) scale(0.34)">{@html buildingSvg('recycleur')}</g>
+      <g transform="translate(91.0 38.0) scale(0.34)">{@html buildingSvg('decharge')}</g>
     {:else}
-      <rect x="40" y="20" width="26" height="26" fill="#2b2f36" /><circle
-        cx="53"
-        cy="33"
-        r="24"
-        fill="none"
-        stroke="#d62828"
-        stroke-width="3"
-      />
-      <path d="M6 33 H29" fill="none" stroke="#9aa0a6" stroke-width="5" stroke-linecap="round" />
-      <circle cx="12" cy="33" r="5" fill="#e08a1e" /><circle cx="24" cy="33" r="5" fill="#3ba7ff" />
+      <g transform="translate(33.0 13.0) scale(0.4)">{@html buildingSvg('tri')}</g><circle cx="53" cy="33" r="25" fill="none" stroke="#d62828" stroke-width="3" />
+      <path d="M6 33 H29" fill="none" stroke="#6b7078" stroke-width="5" stroke-linecap="round" />
+      <g transform="translate(14 33)">{@html truckSvg('#e08a1e')}</g><g transform="translate(26 33) scale(.8)">{@html truckSvg('#3ba7ff')}</g>
     {/if}
   </svg>
 {/snippet}

@@ -1,17 +1,8 @@
 <script lang="ts">
-  import type { ShapeName } from '../../render/theme';
-  import { glyphSvg } from '../glyphs';
+  import type { ActorKind, Res } from '../../sim/types';
+  import { buildingSvg } from '../buildings';
 
-  let { shape, size = 36, fill = '#2b2f36' }: { shape: ShapeName; size?: number; fill?: string } = $props();
+  let { kind, res = 'plastique', size = 36 }: { kind: ActorKind; res?: Res; size?: number } = $props();
 </script>
 
-<svg
-  width={size}
-  height={size}
-  viewBox="0 0 100 100"
-  aria-hidden="true"
-  style:fill
-  stroke="#2b2f36"
-  stroke-width="4"
-  stroke-linejoin="round">{@html glyphSvg(shape)}</svg
->
+<svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">{@html buildingSvg(kind, res)}</svg>
