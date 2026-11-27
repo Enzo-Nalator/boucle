@@ -5,7 +5,7 @@ import { MAX_LEVEL, RENOVATE_COST, UPGRADE_COST } from '../../src/sim/world';
 import type { ActorKind } from '../../src/sim/types';
 import { ACTOR_INFO, ACTOR_ORDER, ALL_TOOLS, HELP_PAGES, actorNumber, actorStats, toolInfo } from '../../src/ui/help';
 
-const KINDS: ActorKind[] = ['quartier', 'collecteur', 'tri', 'recycleur', 'fabricant', 'reparateur', 'decharge'];
+const KINDS: ActorKind[] = ['quartier', 'tri', 'recycleur', 'fabricant', 'reparateur', 'decharge', 'garage'];
 
 describe('ACTOR_INFO', () => {
   it('décrit chaque acteur avec un nom et un rôle', () => {
@@ -93,7 +93,7 @@ describe('HELP_PAGES', () => {
     expect(new Set(words).size).toBe(words.length);
   });
 
-  it('présente chacun des 7 acteurs sur exactement une page', () => {
+  it('présente chacun des 6 acteurs sur exactement une page', () => {
     const seen = HELP_PAGES.flatMap(p => p.actors ?? []);
     expect([...seen].sort()).toEqual([...KINDS].sort());
   });

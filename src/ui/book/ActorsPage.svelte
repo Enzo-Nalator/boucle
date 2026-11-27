@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ActorKind } from '../../sim/types';
-  import { buildingSvg, slotsSvg, truckSvg } from '../buildings';
+  import { buildingSvg, RES_CSS, slotsSvg, truckSvg } from '../buildings';
   import { ACTOR_INFO, actorNumber, actorStats, type HelpPage } from '../help';
   import { reducedMotion } from './motion';
   import Glyph from './Glyph.svelte';
@@ -18,21 +18,27 @@
   const stats = $derived(actorStats(sel));
   /** Contenu d'exemple de la file : matières mélangées, une seule matière pour un recycleur, etc. */
   const demo = $derived(
-    sel === 'quartier' || sel === 'tri' || sel === 'collecteur'
-      ? [{ res: 'plastique' as const }, { res: 'verre' as const }, { res: 'plastique' as const, dirty: true }, { res: 'bio' as const }, { res: 'plastique' as const }]
+    sel === 'quartier' || sel === 'tri'
+      ? [
+          { res: 'plastique' as const },
+          { res: 'verre' as const },
+          { res: 'plastique' as const, dirty: true },
+          { res: 'bio' as const },
+          { res: 'plastique' as const },
+        ]
       : sel === 'recycleur'
-        ? [{ res: 'plastique' as const }, { res: 'plastique' as const }, { res: 'verre' as const, stuck: true }]
+        ? [{ res: 'plastique' as const }, { res: 'plastique' as const }, { res: 'plastique' as const }]
         : sel === 'fabricant'
-          ? [{ res: 'plastique' as const, kind: 'matiere' as const }, { res: 'plastique' as const, kind: 'matiere' as const }]
+          ? [
+              { res: 'plastique' as const, kind: 'matiere' as const },
+              { res: 'plastique' as const, kind: 'matiere' as const },
+            ]
           : sel === 'reparateur'
             ? [{ res: 'verre' as const }]
-            : [{ res: 'bio' as const }, { res: 'plastique' as const }],
+            : sel === 'garage'
+              ? []
+              : [{ res: 'bio' as const }, { res: 'plastique' as const }],
   );
-  const ROUTE: Partial<Record<ActorKind, string>> = {
-    recycleur: '#3ba7ff',
-    fabricant: '#e08a1e',
-    reparateur: '#e08a1e',
-  };
 </script>
 
 <Spread backdrop={info.name.toUpperCase()}>
@@ -51,16 +57,18 @@
           <path d="M286 160 H232 L167 95 H164" stroke="#fff" stroke-width="2" stroke-dasharray="8 10" />
         </g>
         <g transform="translate(64 45)">{@html buildingSvg(sel)}</g>
-        <g transform="translate(114 151)">{@html slotsSvg(demo)}</g>
+        {#if demo.length}<g transform="translate(114 151)">{@html slotsSvg(demo)}</g>{/if}
         {#if !still}
           <g
-            ><animateMotion dur="2.6s" repeatCount="indefinite" rotate="auto"><mpath href="#{uid}-route" /></animateMotion
-            >{@html truckSvg(ROUTE[sel] ?? '#9aa0a6')}</g
+            ><animateMotion dur="2.6s" repeatCount="indefinite" rotate="auto"
+              ><mpath href="#{uid}-route" /></animateMotion
+            >{@html truckSvg(demo.length ? RES_CSS[demo[0].res] : '#9aa0a6')}</g
           >
         {/if}
       </svg>
       <p class="hb-cap" style="max-width: 250px">
-        Les cases sous le bâtiment montrent ce qu’il stocke : la couleur donne la matière. Une case entourée de rouge est un paquet coincé.
+        Les cases sous le bâtiment montrent ce qu’il stocke : la couleur donne la matière. Un point sombre signale un
+        déchet contaminé.
       </p>
     {/key}
   {/snippet}

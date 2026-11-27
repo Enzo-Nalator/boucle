@@ -1,6 +1,5 @@
 import type { ActorKind, Res } from '../sim/types';
 
-export const BG = '#f4f1ea';
 export const INK = 0x2b2f36;
 export const GREY = 0x9aa0a6;
 export const RES_COLOR: Record<Res, number> = {
@@ -11,24 +10,14 @@ export const RES_COLOR: Record<Res, number> = {
   papier: 0xd9c84a,
 };
 
-/** Direction « ville » : herbe, bitume, pastille de fond et libellé de chaque acteur. */
-export const GRASS = 0xcfe8b8;
+/** Direction « ville » : bitume et tuile de fond de chaque acteur (l'herbe est le fond du jeu, voir game.ts). */
 export const ROAD = 0x8a8f98;
 export const ACTOR_BASE: Record<ActorKind, number> = {
   quartier: 0xfde8c8,
-  collecteur: 0xe3e6ec,
   tri: 0xdcd3ff,
   recycleur: 0xe3e6ec,
   fabricant: 0xffe9a8,
   reparateur: 0xffd3d3,
   decharge: 0xd9cfc4,
-};
-export const ACTOR_LABEL: Record<ActorKind, string> = {
-  quartier: 'Quartier',
-  collecteur: 'Dépôt',
-  tri: 'Tri',
-  recycleur: 'Recycleur',
-  fabricant: 'Fabricant',
-  reparateur: 'Réparateur',
-  decharge: 'Décharge',
+  garage: 0xd6e4f0,
 };

@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { ACTOR_DEFS } from '../../sim/defs';
-  import type { ActorKind } from '../../sim/types';
-  import { toolInfo, type HelpPage } from '../help';
+  import { toolCost as cost, toolInfo, type HelpPage } from '../help';
   import { toolIcon } from '../icons';
   import type { Tool } from '../store.svelte';
   import Heading from './Heading.svelte';
@@ -9,9 +7,7 @@
 
   let { page, n }: { page: HelpPage; n: number } = $props();
   const tools = $derived(page.tools ?? []);
-  let active = $state<Tool>('route');
-  const cost = (t: Tool) =>
-    t.startsWith('place:') ? ACTOR_DEFS[t.slice('place:'.length) as ActorKind].cost : undefined;
+  let active = $state<Tool>('road');
 </script>
 
 <Spread backdrop={page.backdrop}>
