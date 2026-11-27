@@ -1,13 +1,13 @@
-import { ACTOR_DEFS, DT, ROUTE_SPEED } from './defs';
+import { ACTOR_DEFS, DT, DWELL, GARAGE, TRUCK } from './defs';
 import { accepts, processActor } from './actors';
+import { connected, paths, route } from './roads';
 import { inWindow } from './metrics';
 import { nextRandom } from './rng';
 import { applyCommand } from './world';
-import type { Actor, Command, Route, World } from './types';
+import type { Actor, ActorKind, Cell, Command, Packet, World } from './types';
 
-const ROUTE_CAPACITY = 4,
-  OVERFLOW_LIMIT = 5,
-  STUCK_LIMIT = 8,
+const OVERFLOW_LIMIT = 5,
+  LOAD_CELLS = 2, // un paquet d'avance chez un destinataire « vaut » 2 cases de trajet en plus
   EPS = 1e-9;
 
 function emit(w: World, a: Actor) {
@@ -17,79 +17,99 @@ function emit(w: World, a: Actor) {
     const res = w.activeRes[Math.floor(nextRandom(w) * w.activeRes.length)];
     const dirty = nextRandom(w) < w.contamination;
     const reusable = nextRandom(w) < 0.3;
-    a.queue.push({ id: w.nextId++, res, kind: 'dechet', dirty, reusable, repaired: false });
+    a.queue.push({ id: w.nextId++, res, kind: 'dechet', dirty, sorted: false, reusable, repaired: false });
     w.log.push({ t: w.time, ev: 'emit' });
   }
 }
 
-function routeCapacity(w: World, r: Route): number {
-  const from = w.actors.find(a => a.id === r.from)!;
-  return from.kind === 'collecteur' ? 2 + (from.level - 1) : ROUTE_CAPACITY;
+const hasRoom = (a: Actor) => a.kind === 'quartier' || a.queue.length < ACTOR_DEFS[a.kind].capacity;
+
+function deliver(w: World, a: Actor, p: Packet) {
+  if (a.kind !== 'quartier') return void a.queue.push(p);
+  // un objet rendu au quartier redevient un déchet réutilisable à la fin de sa durée de vie
+  a.returns.push({
+    at: w.time + (p.repaired ? 120 : 60),
+    packet: { ...p, id: w.nextId++, kind: 'dechet', dirty: false, sorted: false, reusable: true, repaired: false },
+  });
+}
+
+/** Types de destinataires, du préféré au dernier recours (repris de la branche gameplay). */
+function tiers(from: Actor, p: Packet): ActorKind[] {
+  if (p.kind === 'matiere') return ['fabricant'];
+  if (p.kind === 'objet') return ['quartier'];
+  if (from.kind === 'quartier') return ['tri', 'reparateur', 'decharge'];
+  return p.dirty ? ['decharge'] : ['reparateur', 'recycleur', 'decharge'];
 }
 
 /**
- * Envoie les paquets en attente (quartier : queue ; autres : out). Un paquet qui ne peut pas partir (route pleine,
- * aucune route valide) n'empêche pas les suivants de passer. Hors quartier, un paquet sans aucune route valide
- * pendant STUCK_LIMIT secondes est jeté (fuite ; pas de fuite tant que l'acteur n'a aucune route) : un déchet mal aiguillé ne bloque jamais la chaîne.
+ * Où envoyer le paquet : parmi les bâtiments reliés par la route, le moins chargé et le plus proche du premier type
+ * qui en veut. `'attendre'` : un preneur existe mais il est plein ; null : personne de relié n'en veut.
  */
-function dispatch(w: World, a: Actor) {
+function choose(w: World, from: Actor, p: Packet, prev: Map<number, Cell | null>) {
+  for (const kind of tiers(from, p)) {
+    let best: { to: Actor; path: Cell[] } | null = null,
+      score = Infinity,
+      seen = false;
+    for (const x of w.actors) {
+      if (x === from || x.kind !== kind || !accepts(x, p)) continue;
+      const path = route(prev, from, x);
+      if (!path) continue;
+      seen = true;
+      const inbound = w.trucks.filter(t => t.to === x.id),
+        load = x.queue.length + inbound.reduce((n, t) => n + t.load.length, 0);
+      if (inbound.filter(t => t.from === from.id).length >= TRUCK.perLink) continue;
+      if (x.kind !== 'quartier' && load >= ACTOR_DEFS[x.kind].capacity) continue;
+      const s = load * LOAD_CELLS + path.length;
+      if (s < score) [best, score] = [{ to: x, path }, s];
+    }
+    if (best) return best;
+    if (seen && kind !== 'reparateur') return 'attendre'; // un réparateur plein laisse passer au choix suivant
+  }
+  return null;
+}
+
+/** Meilleur niveau parmi les garages en service reliés à la route ; 0 sans garage. */
+export function garageLevel(w: World): number {
+  const gs = w.actors.filter(a => a.kind === 'garage' && a.offlineUntil <= w.time && connected(w, a));
+  return Math.max(0, ...gs.map(a => a.level));
+}
+
+/**
+ * Envoie les paquets prêts (quartier : file ; autres : sortie) en camion ; ce qui n'a pas de preneur attend. Avec un
+ * garage, un camion emporte aussi les autres paquets prêts qui vont au même endroit, jusqu'à sa capacité.
+ */
+function dispatch(w: World, a: Actor, cap: number) {
   const src = a.kind === 'quartier' ? a.queue : a.out;
-  const outs = w.routes.filter(r => r.from === a.id);
-  const dest = (r: Route) => w.actors.find(x => x.id === r.to)!;
-  let i = 0;
-  while (i < src.length) {
-    const p = src[i];
-    const fits = (r: Route) =>
-      a.kind !== 'tri' ? accepts(dest(r), p) : p.dirty === (dest(r).kind === 'decharge') && accepts(dest(r), p);
-    if (a.kind !== 'quartier' && !outs.some(fits)) {
-      p.stuck = (p.stuck ?? 0) + DT;
-      if (outs.length && p.stuck > STUCK_LIMIT) {
-        src.splice(i, 1);
-        w.log.push({ t: w.time, ev: 'leak' });
-      } else i++;
-      continue;
-    }
-    const free = outs.filter(r => r.transit.length < routeCapacity(w, r));
-    let ok = free.filter(fits);
-    // Ordre des tirages (tri, paquet propre) : seulement si une route juste est libre, 1 tirage pour l'erreur
-    // (erreur ssi < e) ; si erreur ET une mauvaise route libre existe, 1 tirage de plus pour son index.
-    if (a.kind === 'tri' && !p.dirty && ok.length && nextRandom(w) < Math.max(0.01, 0.1 - 0.03 * (a.level - 1))) {
-      const wrong = free.filter(r => !accepts(dest(r), p));
-      if (wrong.length) ok = [wrong[Math.floor(nextRandom(w) * wrong.length)]];
-    }
-    if (!ok.length) {
+  if (a.kind === 'decharge' || !src.length) return;
+  for (const p of src) p.ready ??= w.time + DWELL; // un paquet reste un moment visible dans le bâtiment
+  const prev = paths(w, a),
+    take = (p: Packet) => (p.ready! > w.time + EPS ? null : choose(w, a, p, prev));
+  for (let i = 0; i < src.length;) {
+    const c = take(src[i]);
+    if (!c || c === 'attendre') {
       i++;
       continue;
     }
-    const top = Math.max(...ok.map(r => r.priority));
-    const group = ok.filter(r => r.priority === top);
-    const r = group[a.rr % group.length];
-    a.rr++;
-    r.transit.push({ packet: src.splice(i, 1)[0], d: 0 });
+    const t = { load: src.splice(i, 1), from: a.id, to: c.to.id, path: c.path, d: 0 };
+    w.trucks.push(t);
+    for (let j = i; j < src.length && t.load.length < cap;) {
+      const d = take(src[j]);
+      if (d && d !== 'attendre' && d.to === c.to) t.load.push(...src.splice(j, 1));
+      else j++;
+    }
+    for (const p of t.load) delete p.ready;
   }
 }
 
-function advance(w: World, r: Route) {
-  const dest = w.actors.find(a => a.id === r.to)!;
-  const cap = ACTOR_DEFS[dest.kind].capacity;
-  r.transit = r.transit.filter(t => {
-    t.d = Math.min(t.d + ROUTE_SPEED * DT, r.length);
-    if (t.d < r.length) return true;
-    if (!accepts(dest, t.packet)) {
-      w.log.push({ t: w.time, ev: 'leak' });
-      return false;
-    }
-    if (dest.kind === 'quartier') {
-      const p = t.packet;
-      dest.returns.push({
-        at: w.time + (p.repaired ? 120 : 60),
-        packet: { ...p, id: w.nextId++, kind: 'dechet', dirty: false, reusable: true, repaired: false },
-      });
-      return false;
-    }
-    if (dest.queue.length >= cap) return true; // attend en bout de route
-    dest.queue.push(t.packet);
-    return false;
+/** Avance les camions ; arrivé, un camion livre ce qui entre, et attend devant avec le reste si le destinataire est plein. */
+function drive(w: World, speed: number) {
+  w.trucks = w.trucks.filter(t => {
+    const end = t.path.length - 1;
+    t.d = Math.min(end, t.d + speed * DT);
+    if (t.d < end) return true;
+    const dest = w.actors.find(a => a.id === t.to)!;
+    while (t.load.length && hasRoom(dest)) deliver(w, dest, t.load.shift()!);
+    return t.load.length > 0;
   });
 }
 
@@ -103,13 +123,19 @@ export function step(w: World, commands: Command[]): void {
     const due = a.returns.filter(x => x.at <= w.time);
     a.returns = a.returns.filter(x => x.at > w.time);
     for (const x of due) {
-      a.queue.push({ ...x.packet, kind: 'dechet' });
+      a.queue.push(x.packet);
+      // il remplace un déchet neuf (repris de gameplay) : sinon une boucle qui marche gonfle jusqu'au débordement
+      a.credit -= 1;
       w.log.push({ t: w.time, ev: 'emit' }); // un objet rendu est ré-émis : garde l'indice ≤ 100 %
     }
   }
   for (const a of w.actors) if (on(a)) processActor(w, a);
-  for (const a of w.actors) if (on(a)) dispatch(w, a);
-  for (const r of w.routes) advance(w, r);
+  const level = garageLevel(w),
+    pending = (a: Actor) => (a.kind === 'quartier' ? a.queue : a.out).length;
+  // les plus pleins envoient d'abord : un quartier loin du tri n'est plus affamé par un quartier proche
+  for (const a of [...w.actors].sort((x, y) => pending(y) - pending(x)))
+    if (on(a)) dispatch(w, a, 1 + GARAGE.load * level);
+  drive(w, TRUCK.speed * (1 + GARAGE.speed * level));
   for (const a of w.actors) {
     if (a.kind !== 'quartier') continue;
     a.overflowT = a.queue.length >= ACTOR_DEFS.quartier.capacity ? a.overflowT + DT : 0;
@@ -118,5 +144,6 @@ export function step(w: World, commands: Command[]): void {
   for (const a of w.actors) if (on(a)) w.budget -= ACTOR_DEFS[a.kind].upkeep * DT;
   if (w.budget < 0 && !w.over) w.over = 'faillite';
   w.log = w.log.filter(l => inWindow(w, l.t));
+  w.cash = w.cash.filter(c => inWindow(w, c.t));
   w.time += DT;
 }

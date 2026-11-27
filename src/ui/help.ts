@@ -1,4 +1,4 @@
-import { ACTOR_DEFS, FABRICATE_REVENUE, RECYCLE_REVENUE } from '../sim/defs';
+import { ACTOR_DEFS, DUMP_COST, FABRICATE_REVENUE, GARAGE, RECYCLE_REVENUE, ROAD_COST, SELL_REFUND } from '../sim/defs';
 import type { ActorKind } from '../sim/types';
 import { MAX_LEVEL, RENOVATE_COST, UPGRADE_COST } from '../sim/world';
 import type { Tool } from './store.svelte';
@@ -12,22 +12,16 @@ export const ACTOR_INFO: Record<ActorKind, { name: string; role: string; inputs:
     inputs: 'objets neufs',
     outputs: 'déchets mélangés',
   },
-  collecteur: {
-    name: 'Collecteur',
-    role: 'Relais de transport : fait passer tous les paquets. Amélioré, ses routes transportent plus de paquets à la fois.',
-    inputs: 'tous les paquets',
-    outputs: 'tous les paquets',
-  },
   tri: {
     name: 'Centre de tri',
-    role: 'Oriente chaque paquet vers la route de sa matière et envoie les paquets contaminés à la décharge. Il se trompe parfois (10 % au départ) ; l’amélioration réduit les erreurs.',
+    role: 'Trie les déchets mélangés des quartiers : un recycleur n’accepte que des déchets triés. Les déchets contaminés, une fois triés, ne peuvent aller qu’à la décharge.',
     inputs: 'déchets mélangés',
-    outputs: 'déchets par matière',
+    outputs: 'déchets triés',
   },
   recycleur: {
     name: 'Recycleur',
-    role: `Ne traite qu’une seule matière et refuse les lots trop contaminés (plus de 20 %). Paie ${fr(RECYCLE_REVENUE)} € par paquet recyclé et produit de la matière recyclée.`,
-    inputs: 'déchets d’une matière',
+    role: `Ne traite qu’une seule matière, en déchets triés et propres. Paie ${fr(RECYCLE_REVENUE)} € par paquet recyclé et produit de la matière recyclée.`,
+    inputs: 'déchets triés d’une matière',
     outputs: 'matière recyclée',
   },
   fabricant: {
@@ -44,20 +38,26 @@ export const ACTOR_INFO: Record<ActorKind, { name: string; role: string; inputs:
   },
   decharge: {
     name: 'Décharge',
-    role: 'Absorbe tout sans limite, mais coûte 0,5 € par paquet et fait baisser l’indice de circularité. Une solution de secours.',
-    inputs: 'tout',
+    role: `Absorbe tous les déchets sans limite (jamais la matière ni les objets), mais coûte ${fr(DUMP_COST)} € par paquet et fait baisser l’indice de circularité. Une solution de secours.`,
+    inputs: 'tous les déchets',
     outputs: 'rien (perte)',
+  },
+  garage: {
+    name: 'Garage',
+    role: `Entretient les camions. Tant qu’il est relié à la route, ils roulent ${GARAGE.speed * 100} % plus vite et portent ${GARAGE.load} paquet de plus par niveau du garage (le meilleur compte, pas la somme). Améliore-le pour aller plus loin.`,
+    inputs: 'rien',
+    outputs: 'camions plus rapides et plus chargés',
   },
 };
 
 export const ACTOR_ORDER: ActorKind[] = [
   'quartier',
-  'collecteur',
   'tri',
   'recycleur',
   'fabricant',
   'reparateur',
   'decharge',
+  'garage',
 ];
 
 /** Numéro d'affichage d'un acteur dans le livre : 01 à 07. */
@@ -67,59 +67,70 @@ export const actorNumber = (kind: ActorKind): string => String(ACTOR_ORDER.index
 export function actorStats(kind: ActorKind): { capacity: string; rate: string; cost: string; upkeep: string } {
   const d = ACTOR_DEFS[kind];
   return {
-    capacity: d.capacity >= 1e6 ? 'file illimitée' : `file ${d.capacity}`,
-    rate: `${fr(d.rate)} / s`,
+    capacity: d.capacity >= 1e6 ? 'file illimitée' : d.capacity ? `file ${d.capacity}` : 'pas de stock',
+    rate: d.rate ? `${fr(d.rate)} / s` : `camions +${GARAGE.speed * 100} % / niveau`,
     cost: d.cost === 0 ? 'offert' : `${d.cost} €`,
     upkeep: d.upkeep === 0 ? 'sans entretien' : `${fr(d.upkeep)} € / s`,
   };
 }
 
 export const ALL_TOOLS: Tool[] = [
-  'route',
-  'place:collecteur',
+  'road',
   'place:tri',
   'place:recycleur',
   'place:fabricant',
   'place:reparateur',
   'place:decharge',
+  'place:garage',
   'upgrade',
   'renovate',
-  'priority',
+  'sell',
   'delete',
 ];
+
+/** Prix affiché sur le bouton d'un outil (undefined : rien à payer à la pose). */
+export const toolCost = (tool: Tool): number | undefined =>
+  tool === 'road'
+    ? ROAD_COST
+    : tool.startsWith('place:')
+      ? ACTOR_DEFS[tool.slice('place:'.length) as ActorKind].cost
+      : undefined;
 
 /** Titre et texte de l’infobulle d’un outil de la barre d’actions. */
 export function toolInfo(tool: Tool): { title: string; text: string } {
   if (tool.startsWith('place:')) {
     const kind = tool.slice('place:'.length) as ActorKind;
     const { name, role } = ACTOR_INFO[kind];
-    return { title: `Placer : ${name.toLowerCase()}`, text: `${role} Coût : ${ACTOR_DEFS[kind].cost} €.` };
+    return {
+      title: `Placer : ${name.toLowerCase()}`,
+      text: `${role}${kind === 'recycleur' ? ' Choisis sa matière au-dessus de la barre d’outils.' : ''} Collé à une route, il y est raccordé ; sinon, construis-lui la sienne. Coût : ${ACTOR_DEFS[kind].cost} €.`,
+    };
   }
   switch (tool) {
-    case 'route':
+    case 'road':
       return {
-        title: 'Tracer une route',
-        text: 'Glisse d’un acteur à un autre. Les routes suivent des segments à 0°, 45° ou 90° ; le coût dépend de leur longueur. Glisser dans le sens inverse d’une route existante la supprime.',
+        title: 'Construire une route',
+        text: `Glisse d’un bâtiment ou d’une route jusqu’à une autre : la route se trace en L, par le coude le moins cher, et réutilise gratuitement les routes existantes. Pendant le glisser, le sombre sera construit, le clair est déjà là, et le prix s’affiche. Les routes sont à double sens ; les camions vont d’eux-mêmes aux bâtiments raccordés, par le plus court chemin. Coût : ${ROAD_COST} € par case.`,
       };
     case 'upgrade':
       return {
         title: 'Améliorer',
         text: `Touche un acteur pour monter son niveau (jusqu’au niveau ${MAX_LEVEL}) : il traite plus vite. Coût : ${UPGRADE_COST} €. Sans effet sur les quartiers et les décharges.`,
       };
+    case 'sell':
+      return {
+        title: 'Vendre un bâtiment',
+        text: `Touche un bâtiment pour le vendre : tu récupères ${SELL_REFUND * 100} % de son prix d’achat et sa case se libère. Ce qu’il stocke et les paquets en route vers lui sont perdus. Les quartiers ne se vendent pas.`,
+      };
     case 'renovate':
       return {
         title: 'Rénover',
         text: `Touche un acteur pour vider ses files d’attente en urgence (les paquets sont perdus). Coût : ${RENOVATE_COST} €.`,
       };
-    case 'priority':
-      return {
-        title: 'Priorité',
-        text: 'Touche une route pour changer sa priorité (0, 1 ou 2). Les routes prioritaires sont servies en premier et tracées plus épaisses.',
-      };
     default:
       return {
-        title: 'Supprimer une route',
-        text: 'Touche une route pour la supprimer. Les paquets en transit sont perdus.',
+        title: 'Retirer une route',
+        text: 'Touche une case de route construite pour la retirer (la boucle reste). Les camions qui devaient y passer sont perdus.',
       };
   }
 }
@@ -153,8 +164,8 @@ export const HELP_PAGES: HelpPage[] = [
     backdrop: 'PLATEAU',
     paragraphs: [
       'Chaque acteur est un bâtiment : des maisons pour le quartier, une usine violette pour le tri, une usine de la couleur de sa matière pour le recycleur, un toit en dents de scie pour le fabricant, une maison à croix pour le réparateur, un tas pour la décharge.',
-      'Les camions qui roulent sur les routes transportent des paquets. La couleur de leur caisse donne la matière (plastique, verre, métal, bio, papier) ; un point sombre sur la caisse signale un paquet contaminé.',
-      'Sous chaque acteur, les cases montrent ce qu’il stocke : la couleur est la matière, un carré est un déchet, un rond de la matière recyclée, un triangle un objet. Une case entourée de rouge et un panneau « ! » signalent un paquet que personne n’accepte ; il ne bloque pas les autres, mais il est jeté au bout de 8 secondes (l’indice baisse). Un halo rouge sur un quartier annonce un débordement.',
+      'La boucle est la route principale, déjà construite ; les routes sont à double sens. Un bâtiment collé à une route y est raccordé, les autres ont besoin d’une route construite. Chaque camion porte un paquet vers le bâtiment raccordé qui en veut, par le plus court chemin : sa caisse a la couleur de la matière, un point sombre signale un paquet contaminé, une croix blanche un déchet réutilisable. Un feu marque chaque carrefour.',
+      'Sous chaque acteur, les cases montrent ce qu’il stocke : la couleur est la matière, un carré est un déchet, un rond de la matière recyclée, un triangle un objet. Un point sombre signale un déchet contaminé. Un halo rouge et un panneau « ! » sur un quartier annoncent un débordement.',
       'Un acteur grisé est en panne pendant quelques secondes : il ne traite plus rien, mais les paquets continuent de s’empiler devant lui.',
     ],
   },
@@ -163,14 +174,14 @@ export const HELP_PAGES: HelpPage[] = [
     title: 'Les acteurs',
     subtitle: '1/2',
     backdrop: 'ACTEURS',
-    actors: ['quartier', 'collecteur', 'tri', 'recycleur'],
+    actors: ['quartier', 'tri', 'recycleur'],
   },
   {
     layout: 'actors',
     title: 'Les acteurs',
     subtitle: '2/2',
     backdrop: 'CIRCUIT',
-    actors: ['fabricant', 'reparateur', 'decharge'],
+    actors: ['fabricant', 'reparateur', 'decharge', 'garage'],
   },
   {
     layout: 'tools',
@@ -186,10 +197,9 @@ export const HELP_PAGES: HelpPage[] = [
     title: 'Conseils',
     backdrop: 'ASTUCES',
     paragraphs: [
-      'Construis ton réseau étape par étape : un réseau complet bâti d’un coup épuise le budget de départ en quelques secondes.',
-      'Relie vite chaque nouveau quartier : sans route, il déborde en moins d’une minute.',
-      'Un centre de tri protège les recycleurs de la contamination. Garde la décharge pour les paquets que rien d’autre n’accepte.',
-      'Un panneau « ! » sur un acteur veut dire qu’un paquet ne trouve aucune route qui l’accepte : relie sa matière à son recycleur, ou les contaminés à une décharge, avant qu’il soit jeté.',
+      'La partie démarre avec une boucle de base qui perd de l’argent : un seul recycleur, et le verre part à la décharge. À toi de l’améliorer.',
+      'Construis vite la route de chaque nouveau quartier : sans route, il déborde en moins d’une minute.',
+      'Un centre de tri protège les recycleurs de la contamination. La décharge sert de filet : elle ne reçoit que ce qu’aucun autre bâtiment raccordé n’accepte. Garde-la raccordée, sinon le tri se bouche avec les déchets contaminés.',
     ],
   },
 ];

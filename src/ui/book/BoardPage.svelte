@@ -16,7 +16,7 @@
     <svg
       viewBox="0 0 300 310"
       role="img"
-      aria-label="Mini-plateau annoté : un quartier relié à un recycleur par une route, un acteur grisé en panne"
+      aria-label="Mini-plateau annoté : un quartier relié à un centre de tri par une route, un acteur grisé en panne"
     >
       <rect width="300" height="310" fill="#cfe8b8" />
       <g fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -25,14 +25,31 @@
         <path d="M110 200 H135 L175 160 V110 H190" stroke="#fff" stroke-width="2" stroke-dasharray="8 10" />
       </g>
       <g transform="translate(30 160) scale(.8)">{@html buildingSvg('quartier')}</g>
-      <g transform="translate(190 70) scale(.8)">{@html buildingSvg('recycleur', 'plastique')}</g>
+      <g transform="translate(190 70) scale(.8)">{@html buildingSvg('tri')}</g>
       <g transform="translate(190 200) scale(.8)" opacity=".4">{@html buildingSvg('decharge')}</g>
-      <g transform="translate(70 247) scale(.8)">{@html slotsSvg([{ res: 'plastique' }, { res: 'verre' }, { res: 'plastique', dirty: true }, { res: 'bio' }, { res: 'plastique' }, { res: 'verre' }, { res: 'papier' }])}</g>
-      <g transform="translate(230 157) scale(.8)">{@html slotsSvg([{ res: 'plastique' }, { res: 'verre', stuck: true }], 8)}</g>
+      <g transform="translate(70 247) scale(.8)"
+        >{@html slotsSvg([
+          { res: 'plastique' },
+          { res: 'verre' },
+          { res: 'plastique', dirty: true },
+          { res: 'bio' },
+          { res: 'plastique' },
+          { res: 'verre' },
+          { res: 'papier' },
+        ])}</g
+      >
+      <g transform="translate(230 157) scale(.8)">{@html slotsSvg([{ res: 'plastique' }, { res: 'verre' }], 8)}</g>
       <g transform="translate(262 80) scale(.9)">{@html warnSvg()}</g>
       {#if !still}
-        <g><animateMotion dur="3s" repeatCount="indefinite" rotate="auto"><mpath href="#{uid}-route" /></animateMotion>{@html truckSvg('#3ba7ff')}</g>
-        <g><animateMotion dur="3s" begin="-1.5s" repeatCount="indefinite" rotate="auto"><mpath href="#{uid}-route" /></animateMotion>{@html truckSvg('#3ba7ff', true)}</g>
+        <g
+          ><animateMotion dur="3s" repeatCount="indefinite" rotate="auto"><mpath href="#{uid}-route" /></animateMotion
+          >{@html truckSvg('#3ba7ff')}</g
+        >
+        <g
+          ><animateMotion dur="3s" begin="-1.5s" repeatCount="indefinite" rotate="auto"
+            ><mpath href="#{uid}-route" /></animateMotion
+          >{@html truckSvg('#3ba7ff', true)}</g
+        >
       {:else}
         <g transform="translate(135 200)">{@html truckSvg('#3ba7ff')}</g>
       {/if}
