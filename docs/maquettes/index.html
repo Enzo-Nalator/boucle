@@ -1,118 +1,260 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Boucle ! — maquettes graphiques</title>
-<style>
-:root{--bg:#f4f1ea;--ink:#2b2f36;--mut:#6b7078;--card:#fff}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:24px}
-h1{margin:0 0 4px}header p{margin:0 0 20px;color:var(--mut);max-width:70ch}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(520px,100%),1fr));gap:20px}
-.card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 2px 10px #0001}
-.card h2{margin:0}.tag{color:var(--mut);margin:2px 0 10px;font-style:italic}
-svg{width:100%;height:auto;border-radius:10px;display:block}
-.card ul{margin:10px 0 0;padding-left:20px}.card li{margin:3px 0}
-.k{font-weight:700}.warn{color:#a4472b}
-.leg{font-size:13px;color:var(--mut);margin-top:6px}
-@keyframes pulse{from{opacity:.25}to{opacity:.9}}.pulse{animation:pulse .7s infinite alternate}
-@keyframes bump{from{transform:scale(1)}to{transform:scale(1.08)}}.bump{animation:bump .6s infinite alternate;transform-box:fill-box;transform-origin:center}
-@keyframes belt{to{stroke-dashoffset:-32}}.belt{animation:belt 1s linear infinite}
-@keyframes shake{0%,100%{transform:translateX(-2px)}50%{transform:translateX(2px)}}.shake{animation:shake .25s infinite}
-</style></head><body>
-<header><h1>Boucle ! — 4 directions graphiques</h1>
-<p>Même mini-niveau dans les 4 maquettes : 2 quartiers (celui du bas est <b>presque plein</b>), un tri, 2 recycleurs (plastique, verre), un fabricant, une décharge. Les emojis servent de placeholders d’illustrations. Rien n’est branché sur le jeu.</p></header>
-<div class="grid" id="g"></div>
-<script>
-const N={q1:{x:110,y:130,f:.4},q2:{x:110,y:370,f:.95},tri:{x:330,y:250},dech:{x:330,y:60},rp:{x:560,y:120},rv:{x:560,y:260},fab:{x:560,y:400}};
-const R={
- r1:{p:[[110,130],[210,130],[330,250]],g:['🍾','🥤','🍌']},
- r2:{p:[[110,370],[210,370],[330,250]],g:['🥤','🍌','🍾']},
- r3:{p:[[330,250],[330,60]],g:['🗑️']},
- r4:{p:[[330,250],[430,250],[560,120]],g:['🥤']},
- r5:{p:[[330,250],[560,250]],g:['🍾']},
- r6:{p:[[560,120],[650,120],[650,400],[560,400]],g:['♻️']},
- r7:{p:[[560,260],[560,400]],g:['♻️']},
- r8:{p:[[560,400],[110,400],[110,370]],g:['🧴','🧃']}};
-const d=p=>'M'+p.map(a=>a.join(' ')).join(' L');
-const len=p=>p.slice(1).reduce((s,a,i)=>s+Math.hypot(a[0]-p[i][0],a[1]-p[i][1]),0);
-const mv=(path,gl,size=22,speed=70,gap=130)=>{const L=typeof path==='string'?0:len(path),dur=L/speed,n=Math.max(1,Math.round(L/gap));
- return Array.from({length:n},(_,i)=>`<text font-size="${size}" text-anchor="middle" dominant-baseline="central"><animateMotion dur="${dur}s" begin="${-dur*i/n}s" repeatCount="indefinite" path="${d(path)}"/>${gl[i%gl.length]}</text>`).join('')};
-const T=(x,y,t,s=14,c='#2b2f36',w=700)=>`<text x="${x}" y="${y}" text-anchor="middle" font-size="${s}" font-weight="${w}" fill="${c}" font-family="system-ui">${t}</text>`;
-const E=(x,y,g,s=34)=>`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${s}">${g}</text>`;
-const all=f=>Object.values(R).map(f).join('');
-const svg=(bg,body)=>`<svg viewBox="0 0 800 500" style="background:${bg}">${body}</svg>`;
+<html lang="fr">
 
-/* A — Ville illustrée */
-function A(){
- const roads=all(r=>`<path d="${d(r.p)}" fill="none" stroke="#8a8f98" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/><path d="${d(r.p)}" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="10 10" stroke-linejoin="round"/>`);
- const trucks=Object.entries(R).map(([k,r])=>k==='r3'?mv(r.p,['🚚'],26,70,200):mv(r.p,['🚚'],26,70,200)).join('');
- const b=(n,g,l,c)=>`<g><ellipse cx="${n.x}" cy="${n.y+30}" rx="46" ry="10" fill="#0002"/><circle cx="${n.x}" cy="${n.y}" r="42" fill="${c}" stroke="#fff" stroke-width="4"/>${E(n.x,n.y,g,42)}<rect x="${n.x-44}" y="${n.y+46}" width="88" height="20" rx="10" fill="#fff"/>${T(n.x,n.y+60,l,12)}</g>`;
- const alert=`<circle class="pulse" cx="${N.q2.x}" cy="${N.q2.y}" r="56" fill="none" stroke="#e5484d" stroke-width="6"/><g class="bump">${E(N.q2.x+38,N.q2.y-42,'😱',30)}</g><g>${E(N.q2.x-30,N.q2.y+28,'🗑️',26)}${E(N.q2.x-30,N.q2.y+4,'🍌',16)}${E(N.q2.x-18,N.q2.y+8,'🥤',16)}</g>`;
- return svg('#cfe8b8',roads+trucks+
-  b(N.q1,'🏘️','Quartier','#fde8c8')+b(N.q2,'🏘️','Quartier','#fde8c8')+b(N.tri,'🏭','Tri','#e3e6ec')+b(N.dech,'⛰️','Décharge','#d9cfc4')+
-  b(N.rp,'🏭','Recycl. plastique','#c8e4ff')+b(N.rv,'🏭','Recycl. verre','#c6f0df')+b(N.fab,'🧱','Fabricant','#ffe9a8')+alert+
-  `<g transform="translate(14,12)"><rect width="190" height="34" rx="17" fill="#fff"/>${E(22,17,'🌍',20)}<rect x="40" y="12" width="140" height="10" rx="5" fill="#e5e5e5"/><rect x="40" y="12" width="84" height="10" rx="5" fill="#4caf50"/></g>`);
-}
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Boucle ! — maquettes graphiques</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --ink: #2b2f36;
+      --mut: #6b7078;
+      --card: #fff
+    }
 
-/* B — Usine à tapis roulants */
-function B(){
- const belts=all(r=>`<path d="${d(r.p)}" fill="none" stroke="#3d434d" stroke-width="22" stroke-linejoin="round"/><path class="belt" d="${d(r.p)}" fill="none" stroke="#7d8591" stroke-width="3" stroke-dasharray="10 22" stroke-linejoin="round"/>`);
- const items=Object.values(R).map(r=>mv(r.p,r.g,22,55,60)).join('');
- const m=(n,col,g,l,s=0)=>`<g><rect x="${n.x-44}" y="${n.y-40}" width="88" height="80" rx="14" fill="${col}" stroke="#2b2f36" stroke-width="4"/><rect x="${n.x-44}" y="${n.y-40}" width="88" height="20" rx="10" fill="#0003"/>${E(n.x,n.y+4,g,38)}${T(n.x,n.y+58,l,13)}</g>`;
- const bins=(n,col)=>`<rect x="${n.x+28}" y="${n.y-34}" width="14" height="14" rx="3" fill="${col}"/>`;
- const q=(n,l)=>`<g><rect x="${n.x-44}" y="${n.y-40}" width="88" height="80" rx="14" fill="#fff" stroke="#2b2f36" stroke-width="4"/>${E(n.x,n.y-4,'🏠',34)}<rect x="${n.x-34}" y="${n.y+20}" width="68" height="10" rx="5" fill="#ddd"/><rect x="${n.x-34}" y="${n.y+20}" width="${68*n.f}" height="10" rx="5" fill="${n.f>.8?'#e5484d':'#4caf50'}"/>${T(n.x,n.y+58,l,13)}</g>`;
- const jam=`<g class="shake"><path d="M${N.q2.x+60} ${N.q2.y-46} l24 -44 l24 44z" fill="#ffcc00" stroke="#2b2f36" stroke-width="4" stroke-linejoin="round"/>${T(N.q2.x+84,N.q2.y-52,'!',26)}</g>`;
- return svg('#e9e4d8',belts+items+q(N.q1,'Quartier')+q(N.q2,'Quartier')+m(N.tri,'#9db4ff','⚙️','Tri')+m(N.dech,'#a89888','🗑️','Décharge')+
-  m(N.rp,'#6ec1ff','♻️','Plastique')+m(N.rv,'#6fdcb3','♻️','Verre')+m(N.fab,'#ffd166','🔨','Fabricant')+jam+
-  `<g transform="translate(14,12)"><rect width="150" height="34" rx="8" fill="#2b2f36"/>${E(20,17,'💰',18)}<text x="40" y="23" font-size="16" fill="#fff" font-weight="700" font-family="system-ui">240 €</text></g>`);
-}
+    * {
+      box-sizing: border-box
+    }
 
-/* C — Personnages */
-function C(){
- const paths=all(r=>`<path d="${d(r.p)}" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>`);
- const items=Object.values(R).map(r=>mv(r.p,r.g,22,60,90)).join('');
- const face=(n,col,mood,r=40,eye=1)=>{const m=mood==='ok'?`M${n.x-12} ${n.y+10} q12 12 24 0`:mood==='mid'?`M${n.x-10} ${n.y+14} h20`:`M${n.x-12} ${n.y+20} q12 -14 24 0`;
-  return `<g class="${mood==='bad'?'shake':''}"><circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${col}" stroke="#2b2f36" stroke-width="4"/><circle cx="${n.x-14}" cy="${n.y-8}" r="${mood==='bad'?7:5}" fill="#fff" stroke="#2b2f36" stroke-width="2"/><circle cx="${n.x+14}" cy="${n.y-8}" r="${mood==='bad'?7:5}" fill="#fff" stroke="#2b2f36" stroke-width="2"/><circle cx="${n.x-14}" cy="${n.y-8}" r="2.5" fill="#2b2f36"/><circle cx="${n.x+14}" cy="${n.y-8}" r="2.5" fill="#2b2f36"/><path d="${m}" fill="none" stroke="#2b2f36" stroke-width="4" stroke-linecap="round"/></g>`};
- const bub=(n,g,bad)=>`<g class="${bad?'bump':''}"><rect x="${n.x+22}" y="${n.y-68}" width="44" height="34" rx="12" fill="${bad?'#ffe3e3':'#fff'}" stroke="${bad?'#e5484d':'#2b2f36'}" stroke-width="3"/>${E(n.x+44,n.y-51,g,22)}</g>`;
- return svg('#dff3ff',paths+items+
-  face(N.q1,'#ffd9a0','ok',44)+bub(N.q1,'😋')+face(N.q2,'#ffb4a0','bad',44)+bub(N.q2,'🗑️',true)+
-  face(N.tri,'#c9b8ff','ok')+face(N.dech,'#b8a898','mid')+face(N.rp,'#8fd0ff','ok')+bub(N.rp,'🥤')+face(N.rv,'#8fe8c8','mid')+bub(N.rv,'🍾')+face(N.fab,'#ffe08a','ok')+
-  [['q1','Quartier'],['q2','Quartier'],['tri','Tri'],['dech','Décharge'],['rp','Plastique'],['rv','Verre'],['fab','Fabricant']].map(([k,l])=>T(N[k].x,N[k].y+66,l,13)).join('')+
-  `<g transform="translate(14,12)"><rect width="190" height="34" rx="17" fill="#fff"/>${E(22,17,'⭐',20)}${T(120,23,'Tout le monde est content ?',12,'#6b7078',600)}</g>`);
-}
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 16px/1.45 system-ui, sans-serif;
+      padding: 24px
+    }
 
-/* D — Le cycle visible */
-function D(){
- const cx=400,cy=250,rx=250,ry=170,ring=`M${cx-rx} ${cy} A${rx} ${ry} 0 1 1 ${cx+rx} ${cy} A${rx} ${ry} 0 1 1 ${cx-rx} ${cy}`;
- const circ=.72, per=Math.PI*(3*(rx+ry)-Math.sqrt((3*rx+ry)*(rx+3*ry)));
- const st=(x,y,col,g,l,sub)=>`<g><circle cx="${x}" cy="${y}" r="46" fill="${col}" stroke="#fff" stroke-width="6"/>${E(x,y-2,g,40)}<rect x="${x-52}" y="${y+50}" width="104" height="22" rx="11" fill="#2b2f36"/>${T(x,y+66,l,13,'#fff')}</g>`;
- const clk=`<path id="rg" d="${ring}" fill="none"/>`+
-  Array.from({length:8},(_,i)=>`<text font-size="24" text-anchor="middle" dominant-baseline="central"><animateMotion dur="24s" begin="${-3*i}s" repeatCount="indefinite" path="${ring}" rotate="0"/>${['🍾','🥤','🍌','🍾','🥤','🍌','🍾','🥤'][i]}</text>`).join('');
- const retour=Array.from({length:3},(_,i)=>`<text font-size="24" text-anchor="middle" dominant-baseline="central"><animateMotion dur="9s" begin="${-3*i}s" repeatCount="indefinite" path="M400 420 A250 170 0 0 1 150 250"/>${['🧴','🧃','🧴'][i]}</text>`).join('');
- return svg('#fff7e6',
-  `<path d="${ring}" fill="none" stroke="#eadfc8" stroke-width="40"/>`+
-  `<path d="${ring}" fill="none" stroke="#4caf50" stroke-width="40" stroke-linecap="round" stroke-dasharray="${per*circ} ${per}" transform="rotate(-90 ${cx} ${cy}) scale(1)" style="display:none"/>`+
-  `<path d="M${cx} ${cy-ry} A${rx} ${ry} 0 0 1 ${cx+rx} ${cy} A${rx} ${ry} 0 0 1 ${cx} ${cy+ry}" fill="none" stroke="#4caf50" stroke-width="40" stroke-linecap="round" opacity=".55"/>`+
-  `<path d="M${cx} ${cy+ry} A${rx} ${ry} 0 0 1 ${cx-rx} ${cy}" fill="none" stroke="#e5484d" stroke-width="40" stroke-linecap="round" opacity=".45"/>`+
-  clk+retour+
-  `<path d="M${cx} ${cy-ry} q-40 -40 -120 -30" fill="none" stroke="#c9b8a8" stroke-width="16" stroke-linecap="round" stroke-dasharray="2 18"/>`+
-  st(150,175,'#ffd9a0','🏠','Quartiers')+st(150,325,'#ff9d8a','🏠','Quartiers')+
-  st(400,80,'#c9b8ff','⚙️','Tri')+st(650,160,'#8fd0ff','♻️','Plastique')+st(650,340,'#8fe8c8','♻️','Verre')+st(400,420,'#ffe08a','🔨','Fabricant')+
-  st(250,40,'#d9cfc4','⛰️','Décharge')+
-  `<g class="bump">${E(150,262,'⚠️',34)}</g>`+
-  `<g transform="translate(400,250)"><text text-anchor="middle" font-size="52" dominant-baseline="central" y="-14">♻️</text>${T(0,32,'72 % bouclé',22,'#2b2f36',800)}${T(0,54,'des déchets reviennent en objets',12,'#6b7078',500)}</g>`);
-}
+    h1 {
+      margin: 0 0 4px
+    }
 
-const cards=[
- ['A · La ville','Des maisons, des routes, des camions : « jeu de gestion de ville » que tout le monde a déjà vu',A,
-  ['Aucune abstraction à apprendre : un quartier est des maisons, une route est une route, un camion transporte.','La carte ressemble à ce que le joueur connaît (SimCity, Cities, jeux mobiles de ville).','Le danger est lisible sans légende : poubelle qui déborde + tête paniquée + halo rouge.'],
-  'Les couleurs de matières disparaissent des routes (les camions ne distinguent pas plastique/verre) : à compenser par les bacs ou les icônes d’objets. Plus d’art à produire.'],
- ['B · L’usine à tapis','Chaque acteur est une machine, les routes sont des tapis roulants avec de vrais objets dessus',B,
-  ['On voit des bouteilles, des canettes et des peaux de banane circuler, pas des ronds de couleur : la matière est reconnaissable sans code couleur.','« Tapis roulant » est une métaphore immédiate pour le flux et le sens de circulation (les chevrons défilent).','Un panneau jaune « ! » clignote sur ce qui bloque ; la jauge de remplissage devient une barre qui rougit.'],
-  'Ton plus “industriel” que familial ; le thème « quartier / citoyens » est moins incarné.'],
- ['C · Les personnages','Chaque acteur est une grosse bouille expressive qui réclame ce dont elle a besoin',C,
-  ['On lit l’état d’un coup d’œil sur le visage (content → bof → paniqué), sans jauge ni anneau à interpréter.','La bulle indique ce que chaque acteur veut recevoir (🥤, 🍾) : les règles d’entrée/sortie deviennent visibles, sans manuel.','Très accueillant pour un public casual et jeune ; chaque acteur a une personnalité facile à raconter.'],
-  'Moins “sérieux” sur le sujet circularité ; il faut un vrai travail d’illustration pour que les visages ne soient pas enfantins à l’excès.'],
- ['D · Le cycle','On ne trace plus un réseau libre : un grand anneau montre la boucle et sa santé',D,
-  ['Le but du jeu (« boucler ») est dessiné : un seul grand cercle au centre, avec le score « 72 % bouclé ».','L’anneau se colore vert (ça circule) ou rouge (ça bloque) segment par segment : on voit où est le problème.','Objets avant → après (bouteille → ♻️ → neuf) visibles sur le même cercle.'],
-  'C’est la direction la plus éloignée du jeu actuel : elle suppose de contraindre la disposition (stations sur un anneau, branches) et touche la saisie des routes, pas seulement le rendu.']];
-document.getElementById('g').innerHTML=cards.map(([t,tag,fn,why,cost])=>`<section class="card"><h2>${t}</h2><p class="tag">${tag}</p>${fn()}<ul>${why.map(w=>`<li>${w}</li>`).join('')}<li class="warn"><span class="k">Compromis :</span> ${cost}</li></ul></section>`).join('');
-</script></body></html>
+    header p {
+      margin: 0 0 20px;
+      color: var(--mut);
+      max-width: 70ch
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(520px, 100%), 1fr));
+      gap: 20px
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 2px 10px #0001
+    }
+
+    .card h2 {
+      margin: 0
+    }
+
+    .tag {
+      color: var(--mut);
+      margin: 2px 0 10px;
+      font-style: italic
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      display: block
+    }
+
+    .card ul {
+      margin: 10px 0 0;
+      padding-left: 20px
+    }
+
+    .card li {
+      margin: 3px 0
+    }
+
+    .k {
+      font-weight: 700
+    }
+
+    .warn {
+      color: #a4472b
+    }
+
+    .leg {
+      font-size: 13px;
+      color: var(--mut);
+      margin-top: 6px
+    }
+
+    @keyframes pulse {
+      from {
+        opacity: .25
+      }
+
+      to {
+        opacity: .9
+      }
+    }
+
+    .pulse {
+      animation: pulse .7s infinite alternate
+    }
+
+    @keyframes bump {
+      from {
+        transform: scale(1)
+      }
+
+      to {
+        transform: scale(1.08)
+      }
+    }
+
+    .bump {
+      animation: bump .6s infinite alternate;
+      transform-box: fill-box;
+      transform-origin: center
+    }
+
+    @keyframes belt {
+      to {
+        stroke-dashoffset: -32
+      }
+    }
+
+    .belt {
+      animation: belt 1s linear infinite
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(-2px)
+      }
+
+      50% {
+        transform: translateX(2px)
+      }
+    }
+
+    .shake {
+      animation: shake .25s infinite
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Boucle ! — 4 directions graphiques</h1>
+    <p>Même mini-niveau dans les 4 maquettes : 2 quartiers (celui du bas est <b>presque plein</b>), un tri, 2 recycleurs
+      (plastique, verre), un fabricant, une décharge. Les emojis servent de placeholders d’illustrations. Rien n’est
+      branché sur le jeu.</p>
+  </header>
+  <div class="grid" id="g"></div>
+  <script>
+    const N = { q1: { x: 110, y: 130, f: .4 }, q2: { x: 110, y: 370, f: .95 }, tri: { x: 330, y: 250 }, dech: { x: 330, y: 60 }, rp: { x: 560, y: 120 }, rv: { x: 560, y: 260 }, fab: { x: 560, y: 400 } };
+    const R = {
+      r1: { p: [[110, 130], [210, 130], [330, 250]], g: ['🍾', '🥤', '🍌'] },
+      r2: { p: [[110, 370], [210, 370], [330, 250]], g: ['🥤', '🍌', '🍾'] },
+      r3: { p: [[330, 250], [330, 60]], g: ['🗑️'] },
+      r4: { p: [[330, 250], [430, 250], [560, 120]], g: ['🥤'] },
+      r5: { p: [[330, 250], [560, 250]], g: ['🍾'] },
+      r6: { p: [[560, 120], [650, 120], [650, 400], [560, 400]], g: ['♻️'] },
+      r7: { p: [[560, 260], [560, 400]], g: ['♻️'] },
+      r8: { p: [[560, 400], [110, 400], [110, 370]], g: ['🧴', '🧃'] }
+    };
+    const d = p => 'M' + p.map(a => a.join(' ')).join(' L');
+    const len = p => p.slice(1).reduce((s, a, i) => s + Math.hypot(a[0] - p[i][0], a[1] - p[i][1]), 0);
+    const mv = (path, gl, size = 22, speed = 70, gap = 130) => {
+      const L = typeof path === 'string' ? 0 : len(path), dur = L / speed, n = Math.max(1, Math.round(L / gap));
+      return Array.from({ length: n }, (_, i) => `<text font-size="${size}" text-anchor="middle" dominant-baseline="central"><animateMotion dur="${dur}s" begin="${-dur * i / n}s" repeatCount="indefinite" path="${d(path)}"/>${gl[i % gl.length]}</text>`).join('')
+    };
+    const T = (x, y, t, s = 14, c = '#2b2f36', w = 700) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="${s}" font-weight="${w}" fill="${c}" font-family="system-ui">${t}</text>`;
+    const E = (x, y, g, s = 34) => `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${s}">${g}</text>`;
+    const all = f => Object.values(R).map(f).join('');
+    const svg = (bg, body) => `<svg viewBox="0 0 800 500" style="background:${bg}">${body}</svg>`;
+
+    /* A — Ville illustrée */
+    function A() {
+      const roads = all(r => `<path d="${d(r.p)}" fill="none" stroke="#8a8f98" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/><path d="${d(r.p)}" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="10 10" stroke-linejoin="round"/>`);
+      const trucks = Object.entries(R).map(([k, r]) => k === 'r3' ? mv(r.p, ['🚚'], 26, 70, 200) : mv(r.p, ['🚚'], 26, 70, 200)).join('');
+      const b = (n, g, l, c) => `<g><ellipse cx="${n.x}" cy="${n.y + 30}" rx="46" ry="10" fill="#0002"/><circle cx="${n.x}" cy="${n.y}" r="42" fill="${c}" stroke="#fff" stroke-width="4"/>${E(n.x, n.y, g, 42)}<rect x="${n.x - 44}" y="${n.y + 46}" width="88" height="20" rx="10" fill="#fff"/>${T(n.x, n.y + 60, l, 12)}</g>`;
+      const alert = `<circle class="pulse" cx="${N.q2.x}" cy="${N.q2.y}" r="56" fill="none" stroke="#e5484d" stroke-width="6"/><g class="bump">${E(N.q2.x + 38, N.q2.y - 42, '😱', 30)}</g><g>${E(N.q2.x - 30, N.q2.y + 28, '🗑️', 26)}${E(N.q2.x - 30, N.q2.y + 4, '🍌', 16)}${E(N.q2.x - 18, N.q2.y + 8, '🥤', 16)}</g>`;
+      return svg('#cfe8b8', roads + trucks +
+        b(N.q1, '🏘️', 'Quartier', '#fde8c8') + b(N.q2, '🏘️', 'Quartier', '#fde8c8') + b(N.tri, '🏭', 'Tri', '#e3e6ec') + b(N.dech, '⛰️', 'Décharge', '#d9cfc4') +
+        b(N.rp, '🏭', 'Recycl. plastique', '#c8e4ff') + b(N.rv, '🏭', 'Recycl. verre', '#c6f0df') + b(N.fab, '🧱', 'Fabricant', '#ffe9a8') + alert +
+        `<g transform="translate(14,12)"><rect width="190" height="34" rx="17" fill="#fff"/>${E(22, 17, '🌍', 20)}<rect x="40" y="12" width="140" height="10" rx="5" fill="#e5e5e5"/><rect x="40" y="12" width="84" height="10" rx="5" fill="#4caf50"/></g>`);
+    }
+
+    /* B — Usine à tapis roulants */
+    function B() {
+      const belts = all(r => `<path d="${d(r.p)}" fill="none" stroke="#3d434d" stroke-width="22" stroke-linejoin="round"/><path class="belt" d="${d(r.p)}" fill="none" stroke="#7d8591" stroke-width="3" stroke-dasharray="10 22" stroke-linejoin="round"/>`);
+      const items = Object.values(R).map(r => mv(r.p, r.g, 22, 55, 60)).join('');
+      const m = (n, col, g, l, s = 0) => `<g><rect x="${n.x - 44}" y="${n.y - 40}" width="88" height="80" rx="14" fill="${col}" stroke="#2b2f36" stroke-width="4"/><rect x="${n.x - 44}" y="${n.y - 40}" width="88" height="20" rx="10" fill="#0003"/>${E(n.x, n.y + 4, g, 38)}${T(n.x, n.y + 58, l, 13)}</g>`;
+      const bins = (n, col) => `<rect x="${n.x + 28}" y="${n.y - 34}" width="14" height="14" rx="3" fill="${col}"/>`;
+      const q = (n, l) => `<g><rect x="${n.x - 44}" y="${n.y - 40}" width="88" height="80" rx="14" fill="#fff" stroke="#2b2f36" stroke-width="4"/>${E(n.x, n.y - 4, '🏠', 34)}<rect x="${n.x - 34}" y="${n.y + 20}" width="68" height="10" rx="5" fill="#ddd"/><rect x="${n.x - 34}" y="${n.y + 20}" width="${68 * n.f}" height="10" rx="5" fill="${n.f > .8 ? '#e5484d' : '#4caf50'}"/>${T(n.x, n.y + 58, l, 13)}</g>`;
+      const jam = `<g class="shake"><path d="M${N.q2.x + 60} ${N.q2.y - 46} l24 -44 l24 44z" fill="#ffcc00" stroke="#2b2f36" stroke-width="4" stroke-linejoin="round"/>${T(N.q2.x + 84, N.q2.y - 52, '!', 26)}</g>`;
+      return svg('#e9e4d8', belts + items + q(N.q1, 'Quartier') + q(N.q2, 'Quartier') + m(N.tri, '#9db4ff', '⚙️', 'Tri') + m(N.dech, '#a89888', '🗑️', 'Décharge') +
+        m(N.rp, '#6ec1ff', '♻️', 'Plastique') + m(N.rv, '#6fdcb3', '♻️', 'Verre') + m(N.fab, '#ffd166', '🔨', 'Fabricant') + jam +
+        `<g transform="translate(14,12)"><rect width="150" height="34" rx="8" fill="#2b2f36"/>${E(20, 17, '💰', 18)}<text x="40" y="23" font-size="16" fill="#fff" font-weight="700" font-family="system-ui">240 €</text></g>`);
+    }
+
+    /* C — Personnages */
+    function C() {
+      const paths = all(r => `<path d="${d(r.p)}" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>`);
+      const items = Object.values(R).map(r => mv(r.p, r.g, 22, 60, 90)).join('');
+      const face = (n, col, mood, r = 40, eye = 1) => {
+        const m = mood === 'ok' ? `M${n.x - 12} ${n.y + 10} q12 12 24 0` : mood === 'mid' ? `M${n.x - 10} ${n.y + 14} h20` : `M${n.x - 12} ${n.y + 20} q12 -14 24 0`;
+        return `<g class="${mood === 'bad' ? 'shake' : ''}"><circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${col}" stroke="#2b2f36" stroke-width="4"/><circle cx="${n.x - 14}" cy="${n.y - 8}" r="${mood === 'bad' ? 7 : 5}" fill="#fff" stroke="#2b2f36" stroke-width="2"/><circle cx="${n.x + 14}" cy="${n.y - 8}" r="${mood === 'bad' ? 7 : 5}" fill="#fff" stroke="#2b2f36" stroke-width="2"/><circle cx="${n.x - 14}" cy="${n.y - 8}" r="2.5" fill="#2b2f36"/><circle cx="${n.x + 14}" cy="${n.y - 8}" r="2.5" fill="#2b2f36"/><path d="${m}" fill="none" stroke="#2b2f36" stroke-width="4" stroke-linecap="round"/></g>`
+      };
+      const bub = (n, g, bad) => `<g class="${bad ? 'bump' : ''}"><rect x="${n.x + 22}" y="${n.y - 68}" width="44" height="34" rx="12" fill="${bad ? '#ffe3e3' : '#fff'}" stroke="${bad ? '#e5484d' : '#2b2f36'}" stroke-width="3"/>${E(n.x + 44, n.y - 51, g, 22)}</g>`;
+      return svg('#dff3ff', paths + items +
+        face(N.q1, '#ffd9a0', 'ok', 44) + bub(N.q1, '😋') + face(N.q2, '#ffb4a0', 'bad', 44) + bub(N.q2, '🗑️', true) +
+        face(N.tri, '#c9b8ff', 'ok') + face(N.dech, '#b8a898', 'mid') + face(N.rp, '#8fd0ff', 'ok') + bub(N.rp, '🥤') + face(N.rv, '#8fe8c8', 'mid') + bub(N.rv, '🍾') + face(N.fab, '#ffe08a', 'ok') +
+        [['q1', 'Quartier'], ['q2', 'Quartier'], ['tri', 'Tri'], ['dech', 'Décharge'], ['rp', 'Plastique'], ['rv', 'Verre'], ['fab', 'Fabricant']].map(([k, l]) => T(N[k].x, N[k].y + 66, l, 13)).join('') +
+        `<g transform="translate(14,12)"><rect width="190" height="34" rx="17" fill="#fff"/>${E(22, 17, '⭐', 20)}${T(120, 23, 'Tout le monde est content ?', 12, '#6b7078', 600)}</g>`);
+    }
+
+    /* D — Le cycle visible */
+    function D() {
+      const cx = 400, cy = 250, rx = 250, ry = 170, ring = `M${cx - rx} ${cy} A${rx} ${ry} 0 1 1 ${cx + rx} ${cy} A${rx} ${ry} 0 1 1 ${cx - rx} ${cy}`;
+      const circ = .72, per = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+      const st = (x, y, col, g, l, sub) => `<g><circle cx="${x}" cy="${y}" r="46" fill="${col}" stroke="#fff" stroke-width="6"/>${E(x, y - 2, g, 40)}<rect x="${x - 52}" y="${y + 50}" width="104" height="22" rx="11" fill="#2b2f36"/>${T(x, y + 66, l, 13, '#fff')}</g>`;
+      const clk = `<path id="rg" d="${ring}" fill="none"/>` +
+        Array.from({ length: 8 }, (_, i) => `<text font-size="24" text-anchor="middle" dominant-baseline="central"><animateMotion dur="24s" begin="${-3 * i}s" repeatCount="indefinite" path="${ring}" rotate="0"/>${['🍾', '🥤', '🍌', '🍾', '🥤', '🍌', '🍾', '🥤'][i]}</text>`).join('');
+      const retour = Array.from({ length: 3 }, (_, i) => `<text font-size="24" text-anchor="middle" dominant-baseline="central"><animateMotion dur="9s" begin="${-3 * i}s" repeatCount="indefinite" path="M400 420 A250 170 0 0 1 150 250"/>${['🧴', '🧃', '🧴'][i]}</text>`).join('');
+      return svg('#fff7e6',
+        `<path d="${ring}" fill="none" stroke="#eadfc8" stroke-width="40"/>` +
+        `<path d="${ring}" fill="none" stroke="#4caf50" stroke-width="40" stroke-linecap="round" stroke-dasharray="${per * circ} ${per}" transform="rotate(-90 ${cx} ${cy}) scale(1)" style="display:none"/>` +
+        `<path d="M${cx} ${cy - ry} A${rx} ${ry} 0 0 1 ${cx + rx} ${cy} A${rx} ${ry} 0 0 1 ${cx} ${cy + ry}" fill="none" stroke="#4caf50" stroke-width="40" stroke-linecap="round" opacity=".55"/>` +
+        `<path d="M${cx} ${cy + ry} A${rx} ${ry} 0 0 1 ${cx - rx} ${cy}" fill="none" stroke="#e5484d" stroke-width="40" stroke-linecap="round" opacity=".45"/>` +
+        clk + retour +
+        `<path d="M${cx} ${cy - ry} q-40 -40 -120 -30" fill="none" stroke="#c9b8a8" stroke-width="16" stroke-linecap="round" stroke-dasharray="2 18"/>` +
+        st(150, 175, '#ffd9a0', '🏠', 'Quartiers') + st(150, 325, '#ff9d8a', '🏠', 'Quartiers') +
+        st(400, 80, '#c9b8ff', '⚙️', 'Tri') + st(650, 160, '#8fd0ff', '♻️', 'Plastique') + st(650, 340, '#8fe8c8', '♻️', 'Verre') + st(400, 420, '#ffe08a', '🔨', 'Fabricant') +
+        st(250, 40, '#d9cfc4', '⛰️', 'Décharge') +
+        `<g class="bump">${E(150, 262, '⚠️', 34)}</g>` +
+        `<g transform="translate(400,250)"><text text-anchor="middle" font-size="52" dominant-baseline="central" y="-14">♻️</text>${T(0, 32, '72 % bouclé', 22, '#2b2f36', 800)}${T(0, 54, 'des déchets reviennent en objets', 12, '#6b7078', 500)}</g>`);
+    }
+
+    const cards = [
+      ['A · La ville', 'Des maisons, des routes, des camions : « jeu de gestion de ville » que tout le monde a déjà vu', A,
+        ['Aucune abstraction à apprendre : un quartier est des maisons, une route est une route, un camion transporte.', 'La carte ressemble à ce que le joueur connaît (SimCity, Cities, jeux mobiles de ville).', 'Le danger est lisible sans légende : poubelle qui déborde + tête paniquée + halo rouge.'],
+        'Les couleurs de matières disparaissent des routes (les camions ne distinguent pas plastique/verre) : à compenser par les bacs ou les icônes d’objets. Plus d’art à produire.'],
+      ['B · L’usine à tapis', 'Chaque acteur est une machine, les routes sont des tapis roulants avec de vrais objets dessus', B,
+        ['On voit des bouteilles, des canettes et des peaux de banane circuler, pas des ronds de couleur : la matière est reconnaissable sans code couleur.', '« Tapis roulant » est une métaphore immédiate pour le flux et le sens de circulation (les chevrons défilent).', 'Un panneau jaune « ! » clignote sur ce qui bloque ; la jauge de remplissage devient une barre qui rougit.'],
+        'Ton plus “industriel” que familial ; le thème « quartier / citoyens » est moins incarné.'],
+      ['C · Les personnages', 'Chaque acteur est une grosse bouille expressive qui réclame ce dont elle a besoin', C,
+        ['On lit l’état d’un coup d’œil sur le visage (content → bof → paniqué), sans jauge ni anneau à interpréter.', 'La bulle indique ce que chaque acteur veut recevoir (🥤, 🍾) : les règles d’entrée/sortie deviennent visibles, sans manuel.', 'Très accueillant pour un public casual et jeune ; chaque acteur a une personnalité facile à raconter.'],
+        'Moins “sérieux” sur le sujet circularité ; il faut un vrai travail d’illustration pour que les visages ne soient pas enfantins à l’excès.'],
+      ['D · Le cycle', 'On ne trace plus un réseau libre : un grand anneau montre la boucle et sa santé', D,
+        ['Le but du jeu (« boucler ») est dessiné : un seul grand cercle au centre, avec le score « 72 % bouclé ».', 'L’anneau se colore vert (ça circule) ou rouge (ça bloque) segment par segment : on voit où est le problème.', 'Objets avant → après (bouteille → ♻️ → neuf) visibles sur le même cercle.'],
+        'C’est la direction la plus éloignée du jeu actuel : elle suppose de contraindre la disposition (stations sur un anneau, branches) et touche la saisie des routes, pas seulement le rendu.']];
+    document.getElementById('g').innerHTML = cards.map(([t, tag, fn, why, cost]) => `<section class="card"><h2>${t}</h2><p class="tag">${tag}</p>${fn()}<ul>${why.map(w => `<li>${w}</li>`).join('')}<li class="warn"><span class="k">Compromis :</span> ${cost}</li></ul></section>`).join('');
+  </script>
+</body>
+
+</html>

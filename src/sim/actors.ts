@@ -1,4 +1,4 @@
-import { ACTOR_DEFS, DT, RECYCLE_REVENUE, FABRICATE_REVENUE } from './defs';
+import { ACTOR_DEFS, DT, RECYCLE_REVENUE, FABRICATE_REVENUE, REPAIR_REVENUE } from './defs';
 import type { Actor, Packet, World } from './types';
 
 export function accepts(a: Actor, p: Packet): boolean {
@@ -14,13 +14,17 @@ export function accepts(a: Actor, p: Packet): boolean {
     case 'reparateur':
       return p.kind === 'dechet' && p.reusable;
     case 'decharge':
-    case 'collecteur':
       return true;
   }
 }
 
 const WINDOW = 5,
   DIRTY_MAX = 0.2;
+
+function pay(w: World, a: Actor, v: number) {
+  w.budget += v;
+  w.cash.push({ t: w.time, id: a.id, kind: a.kind, v });
+}
 
 /** Traite a.queue au débit de l'acteur : un paquet par unité de crédit. */
 export function processActor(w: World, a: Actor): void {
@@ -31,7 +35,7 @@ export function processActor(w: World, a: Actor): void {
     a.credit -= 1;
     const p = a.queue.shift()!;
     if (a.kind === 'decharge') {
-      w.budget -= 0.5;
+      pay(w, a, -0.5);
       w.log.push({ t: w.time, ev: 'leak' });
     } else if (a.kind === 'recycleur') {
       a.window.push(p.dirty);
@@ -39,18 +43,19 @@ export function processActor(w: World, a: Actor): void {
       if (a.window.filter(Boolean).length / a.window.length > DIRTY_MAX) {
         w.log.push({ t: w.time, ev: 'leak' });
       } else {
-        w.budget += RECYCLE_REVENUE;
+        pay(w, a, RECYCLE_REVENUE);
         w.log.push({ t: w.time, ev: 'recycle' });
         a.out.push({ id: w.nextId++, res: p.res, kind: 'matiere', dirty: false, reusable: false, repaired: false });
       }
     } else if (a.kind === 'fabricant') {
-      w.budget += FABRICATE_REVENUE;
+      pay(w, a, FABRICATE_REVENUE);
       a.out.push({ id: w.nextId++, res: p.res, kind: 'objet', dirty: false, reusable: false, repaired: false });
     } else if (a.kind === 'reparateur') {
+      pay(w, a, REPAIR_REVENUE);
       w.log.push({ t: w.time, ev: 'repair' });
       a.out.push({ id: w.nextId++, res: p.res, kind: 'objet', dirty: false, reusable: false, repaired: true });
     } else {
-      a.out.push(p); // tri, collecteur : la décision de route est dans dispatch
+      a.out.push(p); // tri : le choix de la destination est dans dispatch
     }
   }
   if (a.credit > 1) a.credit = 1; // pas de crédit accumulé à vide

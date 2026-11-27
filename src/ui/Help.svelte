@@ -43,7 +43,10 @@
         out:fade={{ duration: still ? 0 : 120 }}
       >
         {#if current.layout === 'goal'}<GoalPage page={current} n={page + 1} />
-        {:else if current.layout === 'board'}<BoardPage page={current} n={page + 1} />
+        {:else if current.layout === 'board' || current.layout === 'routes' || current.layout === 'suivi'}<BoardPage
+            page={current}
+            n={page + 1}
+          />
         {:else if current.layout === 'actors'}<ActorsPage page={current} n={page + 1} />
         {:else if current.layout === 'tools'}<ToolsPage page={current} n={page + 1} />
         {:else}<TipsPage page={current} n={page + 1} />{/if}

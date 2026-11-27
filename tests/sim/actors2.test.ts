@@ -1,6 +1,6 @@
 import { FABRICATE_REVENUE } from '../../src/sim/defs';
 import { describe, it, expect } from 'vitest';
-import { createWorld } from '../../src/sim/world';
+import { applyCommand, createWorld, planRoute } from '../../src/sim/world';
 import { accepts, processActor } from '../../src/sim/actors';
 import { step } from '../../src/sim/step';
 import { run, place, link } from '../helpers';
@@ -17,6 +17,7 @@ const pk = (o: Partial<Packet> = {}, res: Res = 'plastique'): Packet => ({
   ...o,
 });
 const get = (w: World, i: number) => w.actors.find(a => a.id === i)!;
+const trucksTo = (w: World, to: number) => w.trucks.filter(t => t.to === to);
 const quiet = (seed = 1) => {
   const w = createWorld(seed);
   w.emitRate = 0;
@@ -30,16 +31,22 @@ function errors(level: number, n = 1000) {
   const t = place(w, 'tri', 0, 0);
   get(w, t).level = level;
   const good = place(w, 'recycleur', 100, 0, 'plastique');
-  const bad = place(w, 'recycleur', 170, 0, 'verre');
+  const bad = place(w, 'recycleur', 0, 100, 'verre');
   link(w, t, good);
   link(w, t, bad);
-  for (const x of w.routes) x.length = 0;
+  let leaks = 0;
   for (let i = 0; i < n; i++) {
     get(w, t).out.push(pk());
     step(w, []);
+    w.trucks.forEach(x => (x.d = x.dir === 1 ? 1e4 : 0)); // arrivée immédiate
+    step(w, []);
     get(w, good).queue = [];
+    get(w, bad).queue = [];
+    w.trucks = [];
+    leaks += w.log.filter(l => l.ev === 'leak').length; // atterrissage sur un recycleur qui refuse
+    w.log = [];
   }
-  return w.log.filter(l => l.ev === 'leak').length; // atterrissage sur un recycleur qui refuse
+  return leaks;
 }
 
 describe('tri', () => {
@@ -61,11 +68,11 @@ describe('tri', () => {
     get(w, t).out.push(pk());
     run(w, 4);
     expect(get(w, t).out[0].stuck).toBeGreaterThan(3);
-    expect(w.routes[0].transit).toHaveLength(0);
+    expect(w.trucks).toHaveLength(0);
     run(w, 6);
     expect(get(w, t).out).toHaveLength(0);
     expect(w.log.filter(l => l.ev === 'leak')).toHaveLength(1);
-    expect(w.routes[0].transit).toHaveLength(0);
+    expect(w.trucks).toHaveLength(0);
   });
   it('un paquet coincé en tête ne bloque pas les suivants', () => {
     const w = quiet();
@@ -105,7 +112,7 @@ describe('tri', () => {
     get(w, t).queue.push(pk({ dirty: true }));
     run(w, 6);
     expect(get(w, t).out).toHaveLength(1);
-    expect(w.routes[0].transit).toHaveLength(0);
+    expect(w.trucks).toHaveLength(0);
   });
   it('paquet sale va à la décharge', () => {
     const w = quiet();
@@ -116,11 +123,11 @@ describe('tri', () => {
     link(w, t, d);
     get(w, t).out.push(pk({ dirty: true }));
     step(w, []);
-    expect(w.routes[1].transit).toHaveLength(1);
+    expect(trucksTo(w, d)).toHaveLength(1);
   });
 });
 
-describe('fabricant / réparateur / collecteur', () => {
+describe('fabricant / réparateur', () => {
   it('fabricant : 5 matières ⇒ 5 objets, 5 × FABRICATE_REVENUE', () => {
     const w = quiet();
     const f = get(w, place(w, 'fabricant', 0, 0));
@@ -139,20 +146,13 @@ describe('fabricant / réparateur / collecteur', () => {
     expect(r.out).toMatchObject([{ kind: 'objet', repaired: true, dirty: false }]);
     expect(w.log.filter(l => l.ev === 'repair')).toHaveLength(1);
   });
-  it('collecteur : relais', () => {
-    const w = quiet();
-    const c = get(w, place(w, 'collecteur', 0, 0));
-    c.queue.push(pk(), pk({ dirty: true }));
-    run(w, 5);
-    expect(c.out).toHaveLength(2);
-  });
   it('débit ×2 au niveau 3', () => {
     const count = (level: number) => {
       const w = quiet();
-      const a = get(w, place(w, 'collecteur', 0, 0));
+      const a = get(w, place(w, 'tri', 0, 0));
       a.level = level;
       a.queue.push(...Array.from({ length: 6 }, () => pk()));
-      for (let i = 0; i < 20; i++) processActor(w, a); // 1 s
+      for (let i = 0; i < 40; i++) processActor(w, a); // 2 s
       return a.out.length;
     };
     expect(count(1)).toBe(2);
@@ -160,57 +160,88 @@ describe('fabricant / réparateur / collecteur', () => {
   });
 });
 
-describe('dispatch', () => {
-  function two() {
+describe('réseau', () => {
+  const recyclers = () => {
     const w = quiet();
-    const s = place(w, 'collecteur', 0, 0),
-      a = place(w, 'decharge', 100, 0),
-      b = place(w, 'decharge', 0, 100);
-    return { w, s, ra: link(w, s, a), rb: link(w, s, b), src: get(w, s) };
-  }
-  it("priorité : la route prioritaire est utilisée d'abord", () => {
-    const { w, ra, rb, src } = two();
-    w.routes.find(r => r.id === rb)!.priority = 1;
-    src.out.push(pk(), pk());
+    const q = place(w, 'quartier', 100, 100),
+      a = place(w, 'recycleur', 500, 100, 'plastique'),
+      b = place(w, 'recycleur', 100, 500, 'plastique');
+    link(w, q, a);
+    link(w, q, b);
+    return { w, q, a, b, src: get(w, q) };
+  };
+  it('priorité : le bâtiment prioritaire est servi d’abord', () => {
+    const { w, b, src } = recyclers();
+    get(w, b).priority = 1;
+    src.queue.push(pk(), pk());
     step(w, []);
-    expect(w.routes.find(r => r.id === rb)!.transit).toHaveLength(2);
-    expect(w.routes.find(r => r.id === ra)!.transit).toHaveLength(0);
+    expect(trucksTo(w, b)).toHaveLength(2);
   });
-  it('round-robin à priorité égale', () => {
-    const { w, ra, rb, src } = two();
-    const ps = [pk(), pk(), pk(), pk()];
-    src.out.push(...ps);
+  it('à égalité, les paquets se répartissent', () => {
+    const { w, a, b, src } = recyclers();
+    src.queue.push(pk(), pk(), pk(), pk());
     step(w, []);
-    expect(w.routes.find(r => r.id === ra)!.transit.map(t => t.packet.id)).toEqual([ps[0].id, ps[2].id]);
-    expect(w.routes.find(r => r.id === rb)!.transit.map(t => t.packet.id)).toEqual([ps[1].id, ps[3].id]);
+    expect([trucksTo(w, a).length, trucksTo(w, b).length]).toEqual([2, 2]);
   });
-  it('capacité : 4 par route (tri), collecteur 2 + (niveau − 1)', () => {
-    for (const [kind, level, cap] of [
-      ['tri', 1, 4],
-      ['collecteur', 1, 2],
-      ['collecteur', 2, 3],
-    ] as const) {
-      const w = quiet();
-      const s = place(w, kind, 0, 0),
-        d = place(w, 'collecteur', 1000, 0);
-      get(w, s).level = level;
-      link(w, s, d);
-      get(w, s).out.push(...Array.from({ length: 8 }, () => pk()));
-      step(w, []);
-      expect(w.routes[0].transit).toHaveLength(cap);
-    }
+  it('les camions roulent dans les deux sens et passent par les embranchements', () => {
+    const w = quiet();
+    const f = place(w, 'fabricant', 100, 100),
+      r = place(w, 'recycleur', 500, 100, 'plastique');
+    link(w, f, r); // tracée depuis le fabricant, empruntée depuis le recycleur
+    const q = place(w, 'quartier', 300, 300);
+    applyCommand(w, { type: 'route', from: { x: 300, y: 300 }, to: { x: 300, y: 100 } });
+    expect(w.junctions).toHaveLength(1);
+    expect(w.routes).toHaveLength(3);
+    get(w, r).out.push(pk({ kind: 'matiere' }));
+    get(w, q).queue.push(pk());
+    run(w, 12);
+    expect(w.log.filter(l => l.ev === 'recycle')).toHaveLength(1);
+    expect(w.cash.some(c => c.id === f)).toBe(true);
+  });
+  it('un nouveau tracé se branche sur la route voisine au lieu de la doubler', () => {
+    const w = quiet();
+    const a = place(w, 'tri', 100, 100),
+      b = place(w, 'recycleur', 700, 100, 'plastique');
+    link(w, a, b);
+    place(w, 'decharge', 600, 180);
+    const plan = planRoute(w, { x: 100, y: 100 }, { x: 600, y: 180 });
+    expect(plan.reused.length).toBeGreaterThan(0);
+    expect(plan.cost).toBeLessThan(10); // contre plus de 25 € en direct
+  });
+  it('supprimer un tronçon retire aussi l’impasse qui en reste', () => {
+    const w = quiet();
+    const a = place(w, 'tri', 100, 100),
+      b = place(w, 'recycleur', 700, 100, 'plastique'),
+      d = place(w, 'decharge', 400, 300);
+    link(w, a, b);
+    applyCommand(w, { type: 'route', from: { x: 400, y: 300 }, to: { x: 400, y: 100 } });
+    const stub = w.routes.find(r => r.a === d || r.b === d)!;
+    applyCommand(w, { type: 'removeRoute', id: stub.id });
+    expect(w.routes).toHaveLength(1);
+    expect(w.junctions).toEqual([]);
+  });
+  it('camions plafonnés entre un même départ et une même arrivée', () => {
+    const w = quiet();
+    const f = place(w, 'recycleur', 0, 0, 'verre'),
+      d = place(w, 'fabricant', 1000, 0);
+    link(w, f, d);
+    get(w, d).level = 1;
+    get(w, f).out.push(...Array.from({ length: 12 }, () => pk({ kind: 'matiere' })));
+    step(w, []);
+    expect(w.trucks).toHaveLength(8);
   });
   it('attend en bout de route quand la file destinataire est pleine', () => {
     const w = quiet();
-    const s = place(w, 'collecteur', 0, 0),
-      t = place(w, 'tri', 100, 0);
-    link(w, s, t);
-    const dest = get(w, t);
-    dest.queue.push(...Array.from({ length: 10 }, () => pk()));
-    get(w, s).out.push(pk());
-    dest.out.push(...Array.from({ length: 10 }, () => pk())); // le tri ne consomme plus : file pleine
+    const s = place(w, 'recycleur', 0, 0, 'verre'),
+      f = place(w, 'fabricant', 100, 0);
+    link(w, s, f);
+    get(w, s).out.push(pk({ kind: 'matiere' }));
+    step(w, []);
+    const dest = get(w, f);
+    dest.queue.push(...Array.from({ length: 8 }, () => pk({ kind: 'matiere' })));
+    dest.out.push(...Array.from({ length: 8 }, () => pk({ kind: 'objet' }))); // le fabricant ne consomme plus
     run(w, 5);
-    expect(w.routes[0].transit).toHaveLength(1);
-    expect(w.routes[0].transit[0].d).toBe(w.routes[0].length);
+    expect(w.trucks).toHaveLength(1);
+    expect(w.trucks[0].d).toBe(w.routes[0].length);
   });
 });

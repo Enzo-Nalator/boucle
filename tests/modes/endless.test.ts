@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createEndless, SLOTS, FIRST_QUARTIER } from '../../src/modes/endless';
+import { createEndless, MAX_QUARTIERS, SPAWN } from '../../src/modes/endless';
+import { inWater, MAP_IDS } from '../../src/sim/maps';
 import { DT } from '../../src/sim/defs';
 
 const quartiers = (e: ReturnType<typeof createEndless>) => e.world.actors.filter(a => a.kind === 'quartier').length;
@@ -19,7 +20,7 @@ const advanceTo = (e: ReturnType<typeof createEndless>, t: number) => advance(e,
 describe('directeur mode A', () => {
   it('démarre avec un quartier et plastique/verre', () => {
     const e = createEndless(1);
-    expect(e.world.actors.map(a => [a.kind, a.x, a.y])).toEqual([['quartier', FIRST_QUARTIER.x, FIRST_QUARTIER.y]]);
+    expect(e.world.actors.map(a => a.kind)).toEqual(['quartier']);
     expect(e.world.activeRes).toEqual(['plastique', 'verre']);
   });
   it('ordre cyclique aux ticks 60/120/180/240', () => {
@@ -27,9 +28,9 @@ describe('directeur mode A', () => {
       w = e.world;
     advanceTo(e, 59);
     expect([quartiers(e), w.activeRes.length, w.contamination, w.emitRate]).toEqual([1, 2, 0.1, 0.5]);
-    advanceTo(e, 61); // 1 : quartier, exactement SLOTS[0]
+    advanceTo(e, 61); // 1 : quartier
     expect(quartiers(e)).toBe(2);
-    expect(w.actors[1]).toMatchObject({ kind: 'quartier', x: SLOTS[0].x, y: SLOTS[0].y });
+    expect(w.actors[1].kind).toBe('quartier');
     expect([w.activeRes.length, w.contamination, w.emitRate]).toEqual([2, 0.1, 0.5]);
     advanceTo(e, 121); // 2 : matière metal, pas bio
     expect(w.activeRes).toEqual(['plastique', 'verre', 'metal']);
@@ -55,22 +56,25 @@ describe('directeur mode A', () => {
     expect(max).toBeLessThanOrEqual(0.4 + 1e-9);
     expect(max).toBeCloseTo(0.4);
   });
-  it('emplacements épuisés : un nouvel événement quartier ne fait rien', () => {
+  it('plafond de quartiers : les événements suivants ne font rien', () => {
     const e = createEndless(1);
     advanceTo(e, 1261); // 6e événement quartier (tick 21)
-    expect(quartiers(e)).toBe(1 + SLOTS.length);
-    expect(() => advanceTo(e, 1501)).not.toThrow(); // 7e événement quartier
-    expect(quartiers(e)).toBe(1 + SLOTS.length);
+    expect(quartiers(e)).toBe(MAX_QUARTIERS);
+    advanceTo(e, 1501);
+    expect(quartiers(e)).toBe(MAX_QUARTIERS);
   });
-  it('slot bloqué par un acteur : le quartier prend le slot libre suivant', () => {
-    const e = createEndless(1);
-    e.step([{ type: 'place', kind: 'collecteur', x: SLOTS[0].x, y: SLOTS[0].y }]);
-    advanceTo(e, 61);
-    expect(quartiers(e)).toBe(2);
-    expect(e.world.actors.find(a => a.kind === 'quartier' && a.id !== 1)).toMatchObject({
-      x: SLOTS[1].x,
-      y: SLOTS[1].y,
-    });
+  it('apparitions au hasard sur toute la carte, toujours au sec et dans la zone', () => {
+    for (const map of MAP_IDS) {
+      const xs: number[] = [];
+      for (let seed = 1; seed <= 40; seed++) {
+        const [q] = createEndless(seed, map).world.actors;
+        expect(inWater(map, q)).toBe(false);
+        expect(q.x >= SPAWN.x0 && q.x <= SPAWN.x1 && q.y >= SPAWN.y0 && q.y <= SPAWN.y1).toBe(true);
+        xs.push(q.x);
+      }
+      expect(Math.min(...xs)).toBeLessThan(400);
+      expect(Math.max(...xs)).toBeGreaterThan(880);
+    }
   });
   it('matières épuisées : un nouvel événement matière ne fait rien', () => {
     const e = createEndless(1);
@@ -79,22 +83,12 @@ describe('directeur mode A', () => {
     advanceTo(e, 841);
     expect(e.world.activeRes).toHaveLength(5);
   });
-  it('slots valides', () => {
-    const all = [FIRST_QUARTIER, ...SLOTS];
-    for (const p of all) {
-      expect(p.x).toBeGreaterThan(0);
-      expect(p.x).toBeLessThan(1280);
-      expect(p.y).toBeGreaterThan(0);
-      expect(p.y).toBeLessThan(720);
-    }
-    for (let i = 0; i < all.length; i++)
-      for (let j = i + 1; j < all.length; j++)
-        expect(Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y)).toBeGreaterThanOrEqual(60);
-  });
   it('pannes : aucune avant 300 s, 10 s, jamais un quartier, au moins une après 360 s', () => {
     const e = createEndless(3),
       w = e.world;
-    e.step([{ type: 'place', kind: 'tri', x: 640, y: 360 }]);
+    e.world.budget = 1e6;
+    const free = e.world.actors[0].x < 640 ? 900 : 300;
+    e.step([{ type: 'place', kind: 'tri', x: free, y: 360 }]);
     const seen = new Map<number, number>();
     let early = false,
       late = false,
@@ -118,29 +112,36 @@ describe('directeur mode A', () => {
   });
 });
 
-describe('minuteur du prochain quartier', () => {
+describe('annonce du prochain événement', () => {
   it('compte à rebours depuis le début : 60 s, puis 30 s après 30 s', () => {
     const e = createEndless(1);
-    expect(e.nextQuartierIn()).toBeCloseTo(60, 1);
+    expect(e.nextEvent()).toMatchObject({ kind: 'quartier', outage: false });
+    expect(e.nextEvent()!.in).toBeCloseTo(60, 1);
     advance(e, 30);
-    expect(e.nextQuartierIn()).toBeCloseTo(30, 1);
+    expect(e.nextEvent()!.in).toBeCloseTo(30, 1);
   });
-  it('repart de 240 s après l’arrivée d’un quartier (un quartier toutes les 4 minutes)', () => {
+  it('suit le cycle, en nommant la matière qui arrive', () => {
     const e = createEndless(1);
     advanceTo(e, 61);
-    expect(quartiers(e)).toBe(2);
-    expect(e.nextQuartierIn()).toBeCloseTo(300 - 61, 1);
-    advanceTo(e, 301);
-    expect(quartiers(e)).toBe(3);
-    expect(e.nextQuartierIn()).toBeCloseTo(540 - 301, 1);
+    expect(e.nextEvent()).toMatchObject({ kind: 'matiere', res: 'metal' });
+    advanceTo(e, 121);
+    expect(e.nextEvent()!.kind).toBe('contamination');
+    advanceTo(e, 181);
+    expect(e.nextEvent()!.kind).toBe('emission');
   });
-  it('ne dit rien quand tous les emplacements sont pris, ni quand la partie est finie', () => {
+  it('signale la panne à partir de 300 s', () => {
     const e = createEndless(1);
-    advanceTo(e, 1261);
-    expect(quartiers(e)).toBe(1 + SLOTS.length);
-    expect(e.nextQuartierIn()).toBeNull();
-    const f = createEndless(1);
-    f.world.over = 'faillite';
-    expect(f.nextQuartierIn()).toBeNull();
+    e.step([{ type: 'place', kind: 'tri', x: e.world.actors[0].x < 640 ? 900 : 300, y: 360 }]);
+    advanceTo(e, 241);
+    expect(e.nextEvent()).toMatchObject({ kind: 'quartier', outage: true });
+  });
+  it('saute les événements sans effet, et se tait quand la partie est finie', () => {
+    const e = createEndless(1);
+    advanceTo(e, 1261); // plafond de quartiers atteint
+    expect(quartiers(e)).toBe(MAX_QUARTIERS);
+    advanceTo(e, 1441); // le tick suivant (quartier) n'apporte rien
+    expect(e.nextEvent()!.kind).toBe('emission'); // matières et saleté au maximum aussi
+    e.world.over = 'faillite';
+    expect(e.nextEvent()).toBeNull();
   });
 });

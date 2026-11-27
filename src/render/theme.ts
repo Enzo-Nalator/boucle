@@ -16,7 +16,6 @@ export const GRASS = 0xcfe8b8;
 export const ROAD = 0x8a8f98;
 export const ACTOR_BASE: Record<ActorKind, number> = {
   quartier: 0xfde8c8,
-  collecteur: 0xe3e6ec,
   tri: 0xdcd3ff,
   recycleur: 0xe3e6ec,
   fabricant: 0xffe9a8,
@@ -25,7 +24,6 @@ export const ACTOR_BASE: Record<ActorKind, number> = {
 };
 export const ACTOR_LABEL: Record<ActorKind, string> = {
   quartier: 'Quartier',
-  collecteur: 'Dépôt',
   tri: 'Tri',
   recycleur: 'Recycleur',
   fabricant: 'Fabricant',

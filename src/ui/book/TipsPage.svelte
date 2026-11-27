@@ -51,9 +51,18 @@
       <g transform="translate(91.0 -2.0) scale(0.34)">{@html buildingSvg('recycleur')}</g>
       <g transform="translate(91.0 38.0) scale(0.34)">{@html buildingSvg('decharge')}</g>
     {:else}
-      <g transform="translate(33.0 13.0) scale(0.4)">{@html buildingSvg('tri')}</g><circle cx="53" cy="33" r="25" fill="none" stroke="#d62828" stroke-width="3" />
+      <g transform="translate(33.0 13.0) scale(0.4)">{@html buildingSvg('tri')}</g><circle
+        cx="53"
+        cy="33"
+        r="25"
+        fill="none"
+        stroke="#d62828"
+        stroke-width="3"
+      />
       <path d="M6 33 H29" fill="none" stroke="#6b7078" stroke-width="5" stroke-linecap="round" />
-      <g transform="translate(14 33)">{@html truckSvg('#e08a1e')}</g><g transform="translate(26 33) scale(.8)">{@html truckSvg('#3ba7ff')}</g>
+      <g transform="translate(14 33)">{@html truckSvg('#e08a1e')}</g><g transform="translate(26 33) scale(.8)"
+        >{@html truckSvg('#3ba7ff')}</g
+      >
     {/if}
   </svg>
 {/snippet}

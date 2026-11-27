@@ -5,6 +5,7 @@
   import GameOver from './ui/GameOver.svelte';
   import Hud from './ui/Hud.svelte';
   import Menu from './ui/Menu.svelte';
+  import Pause from './ui/Pause.svelte';
   import { START_EVENT, ui } from './ui/store.svelte';
   import Toolbar from './ui/Toolbar.svelte';
   import Tooltip from './ui/Tooltip.svelte';
@@ -20,9 +21,12 @@
 
 <div class="stage" bind:this={host}></div>
 <div class="overlay" class:playing={ui.screen === 'play'}>
-  <Hud />
-  <Toolbar />
-  <Tooltip />
+  <div class="game" inert={ui.paused}>
+    <Hud />
+    <Toolbar />
+    <Tooltip />
+  </div>
+  <Pause />
   <Menu onstart={start} />
   <GameOver onstart={start} />
 </div>
@@ -47,6 +51,9 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
+  }
+  .game {
+    display: contents;
   }
   .playing {
     user-select: none;

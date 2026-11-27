@@ -46,12 +46,14 @@ describe('step', () => {
     const q = place(w, 'quartier', 0, 0),
       f = place(w, 'fabricant', 100, 0);
     const r = link(w, q, f);
-    w.routes
-      .find(x => x.id === r)!
-      .transit.push({
-        packet: { id: 99, res: 'verre', kind: 'dechet', dirty: false, reusable: false, repaired: false },
-        d: 99,
-      });
+    w.trucks.push({
+      packet: { id: 99, res: 'verre', kind: 'dechet', dirty: false, reusable: false, repaired: false },
+      from: q,
+      to: f,
+      road: r,
+      d: 99,
+      dir: 1,
+    });
     expect(() => run(w, 1)).not.toThrow();
     expect(w.log.some(l => l.ev === 'leak')).toBe(true);
     expect(w.actors[1].queue.length).toBe(0);

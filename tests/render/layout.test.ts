@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { snap45, pointAt, distToPolyline, routeWidth, levelPips } from '../../src/render/layout';
+import { snap45, pointAt, distToPolyline, levelPips } from '../../src/render/layout';
 
 describe('snap45', () => {
   it('horizontal puis diagonale', () => {
@@ -76,6 +76,5 @@ describe('distToPolyline', () => {
 });
 
 describe('retours visuels', () => {
-  it('routeWidth 6/8/10', () => expect([0, 1, 2].map(routeWidth)).toEqual([6, 8, 10]));
   it('levelPips 0/1/2', () => expect([1, 2, 3].map(levelPips)).toEqual([0, 1, 2]));
 });

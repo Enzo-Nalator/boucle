@@ -1,6 +1,6 @@
 import { ACTOR_DEFS, DT } from '../src/sim/defs';
 import { step } from '../src/sim/step';
-import { applyCommand } from '../src/sim/world';
+import { applyCommand, planRoute } from '../src/sim/world';
 import type { Endless } from '../src/modes/endless';
 import type { ActorKind, Command, Pt, Res, World } from '../src/sim/types';
 
@@ -14,31 +14,15 @@ export function place(w: World, kind: ActorKind, x: number, y: number, res?: Res
   return w.actors[w.actors.length - 1].id;
 }
 
-export function link(w: World, from: number, to: number, points?: Pt[]): number {
+/** Relie deux bâtiments (le tracé est choisi par la simulation) ; renvoie le dernier tronçon créé. */
+export function link(w: World, from: number, to: number): number {
   const a = w.actors.find(x => x.id === from)!,
     b = w.actors.find(x => x.id === to)!;
-  applyCommand(w, {
-    type: 'route',
-    from,
-    to,
-    points: points ?? [
-      { x: a.x, y: a.y },
-      { x: b.x, y: b.y },
-    ],
-  });
+  applyCommand(w, { type: 'route', from: a, to: b });
   return w.routes[w.routes.length - 1].id;
 }
 
 // --- Bot de scénario (mode A) : réagit aux événements du directeur ---
-
-/** Polyligne en L (0°/90°) ; remplacée par snap45 en Task 8. */
-export function lPath(a: Pt, b: Pt): Pt[] {
-  return [
-    { x: a.x, y: a.y },
-    { x: b.x, y: a.y },
-    { x: b.x, y: b.y },
-  ];
-}
 
 const HUB = { tri: { x: 240, y: 360 }, decharge: { x: 240, y: 430 } };
 const RECYCLEUR_POS: Record<Res, Pt> = {
@@ -61,10 +45,11 @@ export function syncGoodNetwork(w: World): void {
   const ensure = (kind: ActorKind, p: Pt, res?: Res) =>
     !!actorAt(p) || spend({ type: 'place', kind, ...p, ...(res ? { res } : {}) });
   const connect = (from: number, to: number) => {
-    if (w.routes.some(r => r.from === from && r.to === to)) return true;
     const a = w.actors.find(x => x.id === from)!,
       b = w.actors.find(x => x.id === to)!;
-    return spend({ type: 'route', from, to, points: lPath(a, b) });
+    const plan = planRoute(w, a, b);
+    if (plan.error) return plan.error.startsWith('Déjà');
+    return spend({ type: 'route', from: a, to: b });
   };
   for (const r of w.activeRes) if (!ensure('recycleur', RECYCLEUR_POS[r], r)) return;
   const qs = w.actors.filter(a => a.kind === 'quartier').map(a => a.id);
@@ -72,8 +57,6 @@ export function syncGoodNetwork(w: World): void {
   const tri = actorAt(HUB.tri) && actorAt(HUB.decharge) ? actorAt(HUB.tri)!.id : null;
   // entrée : quartiers → (tri → recycleurs + décharge) ou quartiers → recycleurs
   if (tri !== null) {
-    for (const rt of w.routes.filter(r => qs.includes(r.from) && recs.includes(r.to)))
-      applyCommand(w, { type: 'removeRoute', id: rt.id });
     for (const q of qs) if (!connect(q, tri)) return;
     if (!connect(tri, actorAt(HUB.decharge)!.id)) return;
     for (const r of recs) if (!connect(tri, r)) return;
@@ -102,10 +85,19 @@ export function syncGoodNetwork(w: World): void {
   }
 }
 
+const BOT_QUARTIERS: Pt[] = [
+  { x: 160, y: 360 },
+  { x: 160, y: 160 },
+];
+
 /** Joue `seconds` de simulation en resynchronisant le réseau chaque seconde. */
 export function playGoodGame(e: Endless, seconds: number): void {
   const n = Math.round(seconds / DT);
   for (let i = 0; i < n && !e.world.over; i++) {
+    // le bot vise un plan fixe : on ramène les quartiers (apparus au hasard) à ses emplacements
+    e.world.actors
+      .filter(a => a.kind === 'quartier')
+      .forEach((q, k) => k < BOT_QUARTIERS.length && Object.assign(q, BOT_QUARTIERS[k]));
     if (i % 20 === 0) syncGoodNetwork(e.world);
     e.step([]);
   }

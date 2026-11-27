@@ -1,30 +1,62 @@
-import { ACTOR_DEFS, MIN_ACTOR_DISTANCE, ROUTE_COST_PER_PX, START_BUDGET } from './defs';
-import type { Command, Pt, World } from './types';
+import { ACTOR_DEFS, DEMOLISH_REFUND, MIN_ACTOR_DISTANCE } from './defs';
+import { routeLength } from './geo';
+import { inWater, MAPS, type MapId } from './maps';
+import { addPiece, cleanup, connect, planRoute, removeRoad } from './network';
+import type { ActorKind, Command, World } from './types';
 
-export function createWorld(seed: number): World {
+export { addPiece, planRoute, routeLength };
+
+const WATER_MARGIN = 28;
+
+export function createWorld(seed: number, map: MapId = 'plaine'): World {
   return {
+    map,
     time: 0,
     rng: seed >>> 0,
     nextId: 1,
-    budget: START_BUDGET,
+    budget: MAPS[map].budget,
     actors: [],
     routes: [],
+    junctions: [],
+    trucks: [],
     activeRes: ['plastique', 'verre'],
     contamination: 0.1,
     emitRate: 0.5,
     log: [],
     over: null,
+    cash: [],
   };
 }
 
-export function routeLength(points: Pt[]): number {
-  let n = 0;
-  for (let i = 1; i < points.length; i++) n += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
-  return n;
+/** Raison (en clair, pour le joueur) du refus d'une pose ou d'une route ; null si la commande est possible. */
+export function refusal(w: World, c: Command): string | null {
+  if (c.type === 'place') {
+    if (inWater(w.map, c, WATER_MARGIN)) return 'Impossible de construire sur l’eau';
+    if (w.actors.some(a => Math.hypot(a.x - c.x, a.y - c.y) < MIN_ACTOR_DISTANCE))
+      return 'Trop près d’un autre bâtiment';
+    if (w.budget < ACTOR_DEFS[c.kind].cost) return 'Pas assez d’argent';
+  }
+  if (c.type === 'route') {
+    const plan = planRoute(w, c.from, c.to);
+    if (plan.error) return plan.error;
+    if (w.budget < plan.cost) return `Pas assez d’argent (${Math.ceil(plan.cost)} €)`;
+  }
+  if (c.type === 'demolish' && w.actors.find(a => a.id === c.id)?.kind === 'quartier')
+    return 'On ne démolit pas un quartier';
+  return null;
 }
 
-export const UPGRADE_COST = 30,
-  RENOVATE_COST = 50,
+/** Une amélioration coûte cette part de la valeur du bâtiment. */
+export const UPGRADE_RATIO = 0.75;
+
+/** Prix de l'amélioration d'un bâtiment depuis `level` : sa valeur (achat + améliorations déjà payées) × la part. */
+export function upgradeCost(kind: ActorKind, level: number): number {
+  let value = ACTOR_DEFS[kind].cost;
+  for (let l = 1; l < level; l++) value += Math.round(value * UPGRADE_RATIO);
+  return Math.round(value * UPGRADE_RATIO);
+}
+
+export const RENOVATE_COST = 50,
   MAX_LEVEL = 3;
 
 function leak(w: World, n: number) {
@@ -35,10 +67,8 @@ function leak(w: World, n: number) {
 export function applyCommand(w: World, c: Command): boolean {
   switch (c.type) {
     case 'place': {
-      const cost = ACTOR_DEFS[c.kind].cost;
-      if (w.budget < cost) return false;
-      if (w.actors.some(a => Math.hypot(a.x - c.x, a.y - c.y) < MIN_ACTOR_DISTANCE)) return false;
-      w.budget -= cost;
+      if (refusal(w, c)) return false;
+      w.budget -= ACTOR_DEFS[c.kind].cost;
       w.actors.push({
         id: w.nextId++,
         kind: c.kind,
@@ -53,42 +83,50 @@ export function applyCommand(w: World, c: Command): boolean {
         overflowT: 0,
         window: [],
         returns: [],
-        rr: 0,
+        priority: 0,
       });
+      connect(w, w.actors[w.actors.length - 1]); // posé sur une route : il y est raccordé
       return true;
     }
     case 'route': {
-      if (c.from === c.to || c.points.length < 2) return false;
-      if (!w.actors.some(a => a.id === c.from) || !w.actors.some(a => a.id === c.to)) return false;
-      if (w.routes.some(r => r.from === c.from && r.to === c.to)) return false;
-      const inv = w.routes.find(r => r.from === c.to && r.to === c.from);
-      if (inv) return applyCommand(w, { type: 'removeRoute', id: inv.id }); // tracé inverse = suppression (R19)
-      const length = routeLength(c.points),
-        cost = length * ROUTE_COST_PER_PX;
-      if (w.budget < cost) return false;
-      w.budget -= cost;
-      w.routes.push({ id: w.nextId++, from: c.from, to: c.to, points: c.points, length, transit: [], priority: 0 });
+      if (refusal(w, c)) return false;
+      const plan = planRoute(w, c.from, c.to);
+      w.budget -= plan.cost;
+      for (const piece of plan.pieces) addPiece(w, piece);
+      cleanup(w);
       return true;
     }
     case 'removeRoute': {
-      const i = w.routes.findIndex(r => r.id === c.id);
-      if (i < 0) return false;
-      leak(w, w.routes[i].transit.length);
-      w.routes.splice(i, 1);
+      if (!w.routes.some(r => r.id === c.id)) return false;
+      removeRoad(w, c.id);
+      cleanup(w);
       return true;
     }
     case 'upgrade': {
       const a = w.actors.find(x => x.id === c.id);
-      if (!a || a.kind === 'quartier' || a.kind === 'decharge' || a.level >= MAX_LEVEL || w.budget < UPGRADE_COST)
-        return false;
-      w.budget -= UPGRADE_COST;
+      if (!a || a.kind === 'quartier' || a.kind === 'decharge' || a.level >= MAX_LEVEL) return false;
+      const price = upgradeCost(a.kind, a.level);
+      if (w.budget < price) return false;
+      w.budget -= price;
       a.level += 1;
       return true;
     }
     case 'priority': {
-      const r = w.routes.find(x => x.id === c.routeId);
-      if (!r) return false;
-      r.priority = (r.priority + 1) % 3;
+      const a = w.actors.find(x => x.id === c.id);
+      if (!a || a.kind === 'quartier') return false;
+      a.priority = (a.priority + 1) % 3;
+      return true;
+    }
+    case 'demolish': {
+      const a = w.actors.find(x => x.id === c.id);
+      if (!a || refusal(w, c)) return false;
+      leak(w, a.queue.length + a.out.length + w.trucks.filter(t => t.to === a.id).length);
+      w.trucks = w.trucks.filter(t => t.to !== a.id);
+      w.budget += ACTOR_DEFS[a.kind].cost * DEMOLISH_REFUND;
+      w.actors.splice(w.actors.indexOf(a), 1);
+      // les routes qui passaient par lui restent ; ses impasses disparaissent
+      w.junctions.push({ id: a.id, x: a.x, y: a.y });
+      cleanup(w);
       return true;
     }
     case 'renovate': {

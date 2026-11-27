@@ -1,21 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { createWorld, applyCommand } from '../../src/sim/world';
-import { tapCommand, routeCommand, dragVerdict } from '../../src/render/input';
+import { tapCommand, routeCommand, hoverInfo, dragVerdict } from '../../src/render/input';
 
 function setup() {
   const w = createWorld(1);
   w.budget = 1000;
   applyCommand(w, { type: 'place', kind: 'quartier', x: 100, y: 100 });
   applyCommand(w, { type: 'place', kind: 'tri', x: 300, y: 100 });
-  applyCommand(w, {
-    type: 'route',
-    from: w.actors[0].id,
-    to: w.actors[1].id,
-    points: [
-      { x: 100, y: 100 },
-      { x: 300, y: 100 },
-    ],
-  });
+  applyCommand(w, { type: 'route', from: { x: 100, y: 100 }, to: { x: 300, y: 100 } });
   return w;
 }
 
@@ -34,12 +26,15 @@ describe('tapCommand', () => {
     applyCommand(w, { type: 'place', kind: 'recycleur', x: 500, y: 300, res: 'plastique' });
     expect(tapCommand('place:recycleur', { x: 600, y: 500 }, w)).toMatchObject({ kind: 'recycleur', res: 'verre' });
   });
+  it('recycleur : la matière choisie par le joueur l’emporte', () => {
+    expect(tapCommand('place:recycleur', { x: 600, y: 500 }, setup(), 'verre')).toMatchObject({ res: 'verre' });
+  });
   it('delete / priority sur une route (12 px / 28 px)', () => {
     const w = setup(),
       id = w.routes[0].id;
     expect(tapCommand('delete', { x: 200, y: 108 }, w)).toEqual({ type: 'removeRoute', id });
     expect(tapCommand('delete', { x: 200, y: 120 }, w)).toBeNull();
-    expect(tapCommand('priority', { x: 200, y: 110 }, w)).toEqual({ type: 'priority', routeId: id });
+    expect(tapCommand('priority', { x: 300, y: 110 }, w)).toEqual({ type: 'priority', id: w.actors[1].id });
   });
   it('upgrade / renovate sur un acteur', () => {
     const w = setup();
@@ -50,22 +45,19 @@ describe('tapCommand', () => {
 });
 
 describe('routeCommand', () => {
-  it('relâcher sur un autre acteur', () => {
+  it('d’un bâtiment à un autre, ou depuis un point d’une route', () => {
     const w = setup();
-    expect(routeCommand(w, w.actors[1].id, { x: 105, y: 100 })).toEqual({
+    expect(routeCommand(w, { x: 300, y: 100 }, { x: 105, y: 100 })).toEqual({
       type: 'route',
-      from: w.actors[1].id,
-      to: w.actors[0].id,
-      points: [
-        { x: 300, y: 100 },
-        { x: 100, y: 100 },
-      ],
+      from: { x: 300, y: 100 },
+      to: { x: 100, y: 100 },
     });
+    expect(routeCommand(w, { x: 200, y: 108 }, { x: 300, y: 100 })).toMatchObject({ from: { x: 200, y: 100 } });
   });
-  it('relâcher sur soi-même ou dans le vide : annulé', () => {
+  it('relâcher sur place ou dans le vide : annulé', () => {
     const w = setup();
-    expect(routeCommand(w, w.actors[1].id, { x: 300, y: 100 })).toBeNull();
-    expect(routeCommand(w, w.actors[1].id, { x: 700, y: 600 })).toBeNull();
+    expect(routeCommand(w, { x: 300, y: 100 }, { x: 300, y: 100 })).toBeNull();
+    expect(routeCommand(w, { x: 300, y: 100 }, { x: 700, y: 600 })).toBeNull();
   });
 });
 
@@ -84,4 +76,19 @@ describe('dragVerdict', () => {
     expect(dragVerdict(d, { kind: 'move', pointerId: 1 }, 'route', true)).toBe('cancel'));
   it('annule au relâchement hors canvas', () =>
     expect(dragVerdict(d, { kind: 'out', pointerId: 1 }, 'route', false)).toBe('cancel'));
+});
+
+describe('hoverInfo', () => {
+  it('annonce le prix payé ou rendu, ou pourquoi c’est refusé', () => {
+    const w = setup(),
+      [q, t] = w.actors;
+    expect(hoverInfo(w, { type: 'upgrade', id: t.id })).toEqual({ text: 'Niveau 2 : −30 €', ok: true }); // tri : 75 % de 40
+    t.level = 2;
+    expect(hoverInfo(w, { type: 'upgrade', id: t.id })!.text).toBe('Niveau 3 : −53 €'); // 75 % de 40 + 30
+    t.level = 1;
+    expect(hoverInfo(w, { type: 'demolish', id: t.id })).toEqual({ text: 'Démolir : +20 €', ok: true });
+    expect(hoverInfo(w, { type: 'demolish', id: q.id })!.ok).toBe(false);
+    w.budget = 0;
+    expect(hoverInfo(w, { type: 'renovate', id: t.id })!.ok).toBe(false);
+  });
 });

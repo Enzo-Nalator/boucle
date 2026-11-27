@@ -22,12 +22,12 @@
       <rect width="300" height="300" fill="#cfe8b8" />
       {#each ['M74 139 L138 75', 'M166 60 H205 L240 95 V130', 'M240 168 V195 L200 235 H174', 'M128 240 H100 L60 200 V168'] as d, i}
         <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path {d} stroke="#6b7078" stroke-width="16" /><path id="{uid}-r{i + 1}" {d} stroke="#8a8f98" stroke-width="12" /><path
+          <path {d} stroke="#6b7078" stroke-width="16" /><path
+            id="{uid}-r{i + 1}"
             {d}
-            stroke="#fff"
-            stroke-width="2"
-            stroke-dasharray="7 9"
-          />
+            stroke="#8a8f98"
+            stroke-width="12"
+          /><path {d} stroke="#fff" stroke-width="2" stroke-dasharray="7 9" />
         </g>
       {/each}
       <g transform="translate(28.0 118.0) scale(0.64)">{@html buildingSvg('quartier')}</g>
@@ -37,14 +37,17 @@
       {#if !still}
         {#each [['r1', '#9aa0a6', '3s', '0s'], ['r2', '#3ba7ff', '3.4s', '0s'], ['r3', '#3ba7ff', '3.4s', '-1s'], ['r4', '#e08a1e', '3s', '-0.5s']] as [id, c, dur, begin]}
           <g
-            ><animateMotion {dur} {begin} repeatCount="indefinite" rotate="auto"><mpath href="#{uid}-{id}" /></animateMotion
+            ><animateMotion {dur} {begin} repeatCount="indefinite" rotate="auto"
+              ><mpath href="#{uid}-{id}" /></animateMotion
             >{@html truckSvg(c)}</g
           >
         {/each}
       {/if}
       <g fill="#2b2f36" font-size="12" font-weight="700" font-family="system-ui, sans-serif">
         <text x="60" y="210" text-anchor="middle">quartier</text><text x="150" y="102" text-anchor="middle">tri</text>
-        <text x="240" y="210" text-anchor="middle">recycleur</text><text x="150" y="285" text-anchor="middle">fabricant</text>
+        <text x="240" y="210" text-anchor="middle">recycleur</text><text x="150" y="285" text-anchor="middle"
+          >fabricant</text
+        >
       </g>
     </svg>
     <p class="hb-cap" style="max-width: 280px">Le déchet devient objet, l’objet redevient déchet.</p>

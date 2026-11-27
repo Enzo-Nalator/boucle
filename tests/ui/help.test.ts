@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ACTOR_DEFS } from '../../src/sim/defs';
 import { FABRICATE_REVENUE, RECYCLE_REVENUE } from '../../src/sim/defs';
-import { MAX_LEVEL, RENOVATE_COST, UPGRADE_COST } from '../../src/sim/world';
+import { MAX_LEVEL, RENOVATE_COST, UPGRADE_RATIO } from '../../src/sim/world';
 import type { ActorKind } from '../../src/sim/types';
 import { ACTOR_INFO, ACTOR_ORDER, ALL_TOOLS, HELP_PAGES, actorNumber, actorStats, toolInfo } from '../../src/ui/help';
 
-const KINDS: ActorKind[] = ['quartier', 'collecteur', 'tri', 'recycleur', 'fabricant', 'reparateur', 'decharge'];
+const KINDS: ActorKind[] = ['quartier', 'tri', 'recycleur', 'fabricant', 'reparateur', 'decharge'];
 
 describe('ACTOR_INFO', () => {
   it('décrit chaque acteur avec un nom et un rôle', () => {
@@ -24,9 +24,9 @@ describe('fiches d’acteur', () => {
     }
   });
 
-  it('numérote les 7 acteurs de 01 à 07 dans l’ordre du jeu', () => {
-    expect(ACTOR_ORDER).toHaveLength(7);
-    expect(ACTOR_ORDER.map(actorNumber)).toEqual(['01', '02', '03', '04', '05', '06', '07']);
+  it('numérote les 6 acteurs de 01 à 06 dans l’ordre du jeu', () => {
+    expect(ACTOR_ORDER).toHaveLength(6);
+    expect(ACTOR_ORDER.map(actorNumber)).toEqual(['01', '02', '03', '04', '05', '06']);
   });
 
   it('formate les chiffres du simulateur en français', () => {
@@ -63,7 +63,7 @@ describe('toolInfo', () => {
   });
 
   it('améliorer et rénover affichent les coûts du simulateur', () => {
-    expect(toolInfo('upgrade').text).toContain(`${UPGRADE_COST} €`);
+    expect(toolInfo('upgrade').text).toContain(`${UPGRADE_RATIO * 100} %`);
     expect(toolInfo('upgrade').text).toContain(`niveau ${MAX_LEVEL}`);
     expect(toolInfo('renovate').text).toContain(`${RENOVATE_COST} €`);
   });
@@ -84,7 +84,16 @@ describe('HELP_PAGES', () => {
   });
 
   it('chaque page a une mise en page connue', () => {
-    expect(HELP_PAGES.map(p => p.layout)).toEqual(['goal', 'board', 'actors', 'actors', 'tools', 'tips']);
+    expect(HELP_PAGES.map(p => p.layout)).toEqual([
+      'goal',
+      'board',
+      'routes',
+      'suivi',
+      'actors',
+      'actors',
+      'tools',
+      'tips',
+    ]);
   });
 
   it('donne à chaque page un mot géant de fond, tous différents', () => {

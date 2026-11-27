@@ -57,12 +57,14 @@ describe('actors', () => {
       q = place(w, 'quartier', 100, 0);
     const rid = link(w, f, q);
     const qa = w.actors.find(x => x.id === q)!;
-    w.routes
-      .find(r => r.id === rid)!
-      .transit.push({
-        packet: { id: id++, res: 'verre', kind: 'objet', dirty: false, reusable: false, repaired },
-        d: 0,
-      });
+    w.trucks.push({
+      packet: { id: id++, res: 'verre', kind: 'objet', dirty: false, reusable: false, repaired },
+      from: f,
+      to: q,
+      road: rid,
+      d: 100,
+      dir: 1,
+    });
     return { w, qa };
   }
 

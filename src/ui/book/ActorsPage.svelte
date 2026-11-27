@@ -18,14 +18,23 @@
   const stats = $derived(actorStats(sel));
   /** Contenu d'exemple de la file : matières mélangées, une seule matière pour un recycleur, etc. */
   const demo = $derived(
-    sel === 'quartier' || sel === 'tri' || sel === 'collecteur'
-      ? [{ res: 'plastique' as const }, { res: 'verre' as const }, { res: 'plastique' as const, dirty: true }, { res: 'bio' as const }, { res: 'plastique' as const }]
+    sel === 'quartier' || sel === 'tri'
+      ? [
+          { res: 'plastique' as const },
+          { res: 'verre' as const },
+          { res: 'plastique' as const, dirty: true },
+          { res: 'bio' as const },
+          { res: 'plastique' as const },
+        ]
       : sel === 'recycleur'
         ? [{ res: 'plastique' as const }, { res: 'plastique' as const }, { res: 'verre' as const, stuck: true }]
         : sel === 'fabricant'
-          ? [{ res: 'plastique' as const, kind: 'matiere' as const }, { res: 'plastique' as const, kind: 'matiere' as const }]
+          ? [
+              { res: 'plastique' as const, kind: 'matiere' as const },
+              { res: 'plastique' as const, kind: 'matiere' as const },
+            ]
           : sel === 'reparateur'
-            ? [{ res: 'verre' as const }]
+            ? [{ res: 'verre' as const, reusable: true }]
             : [{ res: 'bio' as const }, { res: 'plastique' as const }],
   );
   const ROUTE: Partial<Record<ActorKind, string>> = {
@@ -54,13 +63,15 @@
         <g transform="translate(114 151)">{@html slotsSvg(demo)}</g>
         {#if !still}
           <g
-            ><animateMotion dur="2.6s" repeatCount="indefinite" rotate="auto"><mpath href="#{uid}-route" /></animateMotion
+            ><animateMotion dur="2.6s" repeatCount="indefinite" rotate="auto"
+              ><mpath href="#{uid}-route" /></animateMotion
             >{@html truckSvg(ROUTE[sel] ?? '#9aa0a6')}</g
           >
         {/if}
       </svg>
       <p class="hb-cap" style="max-width: 250px">
-        Les cases sous le bâtiment montrent ce qu’il stocke : la couleur donne la matière. Une case entourée de rouge est un paquet coincé.
+        Les cases sous le bâtiment montrent ce qu’il stocke : la couleur donne la matière. Une case entourée de rouge
+        est un paquet coincé.
       </p>
     {/key}
   {/snippet}

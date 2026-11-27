@@ -6,10 +6,14 @@ interface Info {
   text: string;
 }
 
+/** Élément dont l'infobulle est affichée : lui seul peut la changer ou la fermer. */
+let owner: HTMLElement | null = null;
+
 /** Action Svelte : infobulle qui suit la souris ou le stylet (pas le doigt) et s'affiche aussi au focus clavier. */
 export function tooltip(node: HTMLElement, info: Info): ActionReturn<Info> {
   let current = info;
   const show = (x: number, y: number) => {
+    owner = node;
     tip.title = current.title;
     tip.text = current.text;
     tip.x = x;
@@ -17,13 +21,15 @@ export function tooltip(node: HTMLElement, info: Info): ActionReturn<Info> {
     tip.visible = true;
   };
   const hide = () => {
+    if (owner !== node) return;
+    owner = null;
     tip.visible = false;
   };
   const onEnter = (e: PointerEvent) => {
     if (e.pointerType !== 'touch') show(e.clientX, e.clientY);
   };
   const onMove = (e: PointerEvent) => {
-    if (e.pointerType !== 'touch' && tip.visible) {
+    if (e.pointerType !== 'touch' && tip.visible && owner === node) {
       tip.x = e.clientX;
       tip.y = e.clientY;
     }
@@ -41,7 +47,7 @@ export function tooltip(node: HTMLElement, info: Info): ActionReturn<Info> {
   return {
     update(next: Info) {
       current = next;
-      if (tip.visible) {
+      if (tip.visible && owner === node) {
         tip.title = next.title;
         tip.text = next.text;
       }
